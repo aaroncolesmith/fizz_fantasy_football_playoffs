@@ -4,7 +4,7 @@
  */
 
 // --- Constants & Pool Data ---
-const VERSION = '2.6.0';
+const VERSION = '2.6.1';
 
 // --- ESPN API Configuration ---
 const ESPN_STATS_URL = 'https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/2025/players?view=kona_player_info';
@@ -1542,6 +1542,11 @@ function setupListeners() {
     document.getElementById('show-settings-btn').onclick = () => {
         const l = getActiveLeague();
         navigate('settings', l.id);
+    };
+
+    document.getElementById('settings-back-btn').onclick = () => {
+        const l = getActiveLeague();
+        navigate('league-detail', l.id);
     };
 
     document.getElementById('save-settings-btn').onclick = () => {
