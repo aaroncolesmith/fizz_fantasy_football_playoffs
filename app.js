@@ -4,7 +4,7 @@
  */
 
 // --- Constants & Pool Data ---
-const VERSION = '2.7.0';
+const VERSION = '2.7.1';
 
 // --- ESPN API Configuration ---
 const ESPN_STATS_URL = 'https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/2025/players?view=kona_player_info';
@@ -70,7 +70,7 @@ const PLAYERS = [
     { id: 19, name: 'TreVeyon Henderson', pos: 'RB', team: 'NE', passTD: 0, rushTD: 11, recTD: 1, recs: 28 },
     { id: 20, name: 'Antonio Gibson', pos: 'RB', team: 'NE', passTD: 0, rushTD: 3, recTD: 1, recs: 35 },
     { id: 21, name: 'JaMycal Hasty', pos: 'RB', team: 'NE', passTD: 0, rushTD: 1, recTD: 0, recs: 12 },
-    { id: 22, name: 'Stefon Diggs', pos: 'WR', team: 'NE', passTD: 0, rushTD: 0, recTD: 8, recs: 92 },
+    // REMOVED: Stefon Diggs NE - duplicate, he's on HOU now (id: 63)
     { id: 23, name: 'DeMario Douglas', pos: 'WR', team: 'NE', passTD: 0, rushTD: 0, recTD: 4, recs: 68 },
     { id: 24, name: 'Ja\'Lynn Polk', pos: 'WR', team: 'NE', passTD: 0, rushTD: 0, recTD: 3, recs: 42 },
     { id: 25, name: 'Kendrick Bourne', pos: 'WR', team: 'NE', passTD: 0, rushTD: 0, recTD: 2, recs: 30 },
@@ -146,7 +146,7 @@ const PLAYERS = [
     { id: 85, name: 'J.K. Dobbins', pos: 'RB', team: 'LAC', passTD: 0, rushTD: 2, recTD: 0, recs: 10 },
     { id: 86, name: 'Ladd McConkey', pos: 'WR', team: 'LAC', passTD: 0, rushTD: 0, recTD: 6, recs: 82 },
     { id: 87, name: 'Quentin Johnston', pos: 'WR', team: 'LAC', passTD: 0, rushTD: 0, recTD: 8, recs: 45 },
-    { id: 88, name: 'Joshua Palmer', pos: 'WR', team: 'LAC', passTD: 0, rushTD: 0, recTD: 2, recs: 42 },
+    // REMOVED: Joshua Palmer LAC - duplicate, he's on BUF now (id: 75)
     { id: 89, name: 'Derius Davis', pos: 'WR', team: 'LAC', passTD: 0, rushTD: 1, recTD: 1, recs: 25 },
     { id: 90, name: 'Oronde Gadsden', pos: 'TE', team: 'LAC', passTD: 0, rushTD: 0, recTD: 4, recs: 52 },
     { id: 91, name: 'Will Dissly', pos: 'TE', team: 'LAC', passTD: 0, rushTD: 0, recTD: 1, recs: 18 },
@@ -183,7 +183,7 @@ const PLAYERS = [
     { id: 117, name: 'Jalen Hurts', pos: 'QB', team: 'PHI', passTD: 25, rushTD: 8, recTD: 0, recs: 0 },
     { id: 118, name: 'Kenny Pickett', pos: 'QB', team: 'PHI', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
     { id: 119, name: 'Saquon Barkley', pos: 'RB', team: 'PHI', passTD: 0, rushTD: 12, recTD: 4, recs: 55 },
-    { id: 120, name: 'Kenneth Gainwell', pos: 'RB', team: 'PHI', passTD: 0, rushTD: 3, recTD: 1, recs: 42 },
+    // REMOVED: Kenneth Gainwell PHI - duplicate, he's on PIT now (id: 46)
     { id: 121, name: 'A.J. Brown', pos: 'WR', team: 'PHI', passTD: 0, rushTD: 0, recTD: 7, recs: 92 },
     { id: 122, name: 'DeVonta Smith', pos: 'WR', team: 'PHI', passTD: 0, rushTD: 0, recTD: 4, recs: 85 },
     { id: 123, name: 'Jahan Dotson', pos: 'WR', team: 'PHI', passTD: 0, rushTD: 0, recTD: 3, recs: 38 },
@@ -213,7 +213,7 @@ const PLAYERS = [
     { id: 143, name: 'Ronnie Rivers', pos: 'RB', team: 'LAR', passTD: 0, rushTD: 2, recTD: 0, recs: 12 },
     { id: 144, name: 'Puka Nacua', pos: 'WR', team: 'LAR', passTD: 0, rushTD: 0, recTD: 10, recs: 129 },
     { id: 145, name: 'Davante Adams', pos: 'WR', team: 'LAR', passTD: 0, rushTD: 0, recTD: 14, recs: 60 },
-    { id: 146, name: 'Cooper Kupp', pos: 'WR', team: 'LAR', passTD: 0, rushTD: 0, recTD: 8, recs: 75 },
+    // REMOVED: Cooper Kupp LAR - duplicate, he's on SEA now (id: 101)
     { id: 147, name: 'Tutu Atwell', pos: 'WR', team: 'LAR', passTD: 0, rushTD: 1, recTD: 4, recs: 42 },
     { id: 148, name: 'Jordan Whittington', pos: 'WR', team: 'LAR', passTD: 0, rushTD: 0, recTD: 2, recs: 28 },
     { id: 149, name: 'Colby Parkinson', pos: 'TE', team: 'LAR', passTD: 0, rushTD: 0, recTD: 5, recs: 62 },
@@ -221,7 +221,7 @@ const PLAYERS = [
 
     // NFC #6 - San Francisco 49ers (SF)
     { id: 151, name: 'Brock Purdy', pos: 'QB', team: 'SF', passTD: 30, rushTD: 3, recTD: 0, recs: 0 },
-    { id: 152, name: 'Josh Dobbs', pos: 'QB', team: 'SF', passTD: 2, rushTD: 1, recTD: 0, recs: 0 },
+    // REMOVED: Josh Dobbs SF - duplicate, he's on NE now (id: 17)
     { id: 153, name: 'Christian McCaffrey', pos: 'RB', team: 'SF', passTD: 0, rushTD: 12, recTD: 8, recs: 95 },
     { id: 154, name: 'Brian Robinson Jr.', pos: 'RB', team: 'SF', passTD: 0, rushTD: 7, recTD: 1, recs: 22 },
     { id: 155, name: 'Isaac Guerendo', pos: 'RB', team: 'SF', passTD: 0, rushTD: 4, recTD: 0, recs: 12 },
@@ -898,7 +898,7 @@ function renderLeagueStats(l) {
     html += l.teams.map(t => {
         const teamScore = t.roster.reduce((sum, rp) => {
             const p = PLAYERS.find(pp => pp.id === rp.id);
-            return sum + (p ? p.fantasyPts : 0);
+            return sum + (p ? calculateFantasyPoints(p) : 0);
         }, 0);
 
         return `
@@ -1230,6 +1230,12 @@ function renderPlayerList(l) {
         let valA = a[state.sortCol] || 0;
         let valB = b[state.sortCol] || 0;
 
+        // Special case: fantasyPts needs to be calculated dynamically
+        if (state.sortCol === 'fantasyPts') {
+            valA = calculateFantasyPoints(a);
+            valB = calculateFantasyPoints(b);
+        }
+
         if (typeof valA === 'string') {
             valA = valA.toLowerCase();
             valB = valB.toLowerCase();
@@ -1285,7 +1291,7 @@ function renderPlayerList(l) {
             <td style="text-align:center; font-weight:800; color:var(--gray); padding: 0 10px;">${p.pos}</td>
             <td class="stat-cell ${state.statTab === 'fantasyPts' ? 'active' : ''}" 
                 style="text-align:center; padding: 0 10px; color: var(--red); font-weight:bold; cursor:help;"
-                title="${getPointsBreakdown(p)}">${p.fantasyPts || 0}</td>
+                title="${getPointsBreakdown(p)}">${calculateFantasyPoints(p)}</td>
             <td class="stat-cell ${state.statTab === 'passYds' ? 'active' : ''}" style="text-align:center; padding: 0 10px;">${Math.round(p.passYds || 0)}</td>
             <td class="stat-cell ${state.statTab === 'passTD' ? 'active' : ''}" style="text-align:center; padding: 0 10px;">${p.passTD || 0}</td>
             <td class="stat-cell ${state.statTab === 'rushYds' ? 'active' : ''}" style="text-align:center; padding: 0 10px;">${Math.round(p.rushYds || 0)}</td>
