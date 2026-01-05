@@ -4,7 +4,7 @@
  */
 
 // --- Constants & Pool Data ---
-const VERSION = '2.5.1';
+const VERSION = '2.5.2';
 
 // --- ESPN API Configuration ---
 const ESPN_STATS_URL = 'https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/2025/players?view=kona_player_info';
@@ -765,6 +765,7 @@ function updateUI() {
     if (state.view === 'dashboard') renderLeagues();
     if (state.view === 'league-detail') renderLeagueStats(l);
     if (state.view === 'draft') renderDraftUI(l);
+    if (state.view === 'settings') renderSettings(l);
     renderBreadcrumbs();
 }
 
@@ -902,8 +903,6 @@ function renderLeagueStats(l) {
         draftBtn.innerText = "START DRAFT";
         draftBtn.classList.toggle('hidden', !isAdmin());
     }
-
-    if (state.view === 'settings') renderSettings(l);
 }
 
 function renderSettings(l) {
@@ -960,7 +959,7 @@ function renderDraftUI(l) {
         renderPlayerList(l);
 
         // Update Stat Tabs
-        const stats = ['passTD', 'rushTD', 'recTD', 'recs'];
+        const stats = ['fantasyPts', 'passYds', 'passTD', 'rushYds', 'rushTD', 'recs', 'recYds', 'recTD'];
         stats.forEach(s => {
             const btn = document.querySelector(`[data-stat-tab="${s}"]`);
             if (btn) btn.classList.toggle('active', state.statTab === s);
