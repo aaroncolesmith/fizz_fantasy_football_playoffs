@@ -4,7 +4,7 @@
  */
 
 // --- Constants & Pool Data ---
-const VERSION = '3.0.4'; // Added Slot Indicators & Clean Picks
+const VERSION = '3.0.5'; // Fixed Sync Merging
 
 // --- ESPN API Configuration ---
 const ESPN_STATS_URL = 'https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/2025/players?view=kona_player_info';
@@ -431,48 +431,46 @@ async function loadFromCloud(syncId) {
             .eq('game_code', id)
             .eq('event_type', 'FIZZYFEST_STATE')
             .order('occurred_at', { ascending: false })
-            .limit(10); // Check last 10 snapshots for this code
+            .limit(10);
 
         if (error) throw error;
 
         if (data && data.length > 0) {
             let foundAny = false;
+            const processedLeagues = new Set();
             data.forEach(event => {
                 if (event.event_data && Array.isArray(event.event_data.leagues)) {
                     event.event_data.leagues.forEach(inL => {
                         foundAny = true;
-                        const existingIdx = state.leagues.findIndex(l => l.id === inL.id);
-                        if (existingIdx === -1) {
-                            state.leagues.push(inL);
-                        } else {
-                            const incomingPicks = inL.picks?.length || 0;
-                            const existingPicks = state.leagues[existingIdx].picks?.length || 0;
-                            const incomingDraftStarted = !!(inL.draftOrder && inL.draftOrder.length > 0);
-                            const existingDraftStarted = !!(state.leagues[existingIdx].draftOrder && state.leagues[existingIdx].draftOrder.length > 0);
-
-                            // Always update if incoming has more picks or if draft just started
-                            if (incomingPicks >= existingPicks || (incomingDraftStarted && !existingDraftStarted)) {
-                                state.leagues[existingIdx] = inL;
+                        if (!processedLeagues.has(inL.id)) {
+                            const existingIdx = state.leagues.findIndex(l => l.id === inL.id);
+                            if (existingIdx === -1) {
+                                state.leagues.push(inL);
+                            } else {
+                                const incomingPicks = inL.picks ? inL.picks.length : 0;
+                                const existingPicks = state.leagues[existingIdx].picks ? state.leagues[existingIdx].picks.length : 0;
+                                if (incomingPicks >= existingPicks) {
+                                    state.leagues[existingIdx] = inL;
+                                }
                             }
+                            processedLeagues.add(inL.id);
                         }
                     });
                 }
             });
-
-            if (foundAny) {
-                // Link the ID even if no "new" data was found beyond what we have locally
-                CLOUD_SYNC_ID = id;
-                localStorage.setItem('ff_sync_id', id);
-                localStorage.setItem(KEY_LEAGUES, JSON.stringify(state.leagues));
-                console.log("✅ Cloud Sync Success for", id);
-                updateUI();
-                return true;
-            }
-        }
-    } catch (e) {
-        console.warn("❌ Cloud Pull Failed", e);
+    if (foundAny) {
+        CLOUD_SYNC_ID = id;
+        localStorage.setItem('ff_sync_id', id);
+        localStorage.setItem(KEY_LEAGUES, JSON.stringify(state.leagues));
+        console.log("✅ Cloud Sync Success for", id);
+        updateUI();
+        return true;
     }
-    return false;
+}
+    } catch (e) {
+    console.warn("❌ Cloud Pull Failed", e);
+}
+return false;
 }
 
 window.handleJoinCode = async function () {
