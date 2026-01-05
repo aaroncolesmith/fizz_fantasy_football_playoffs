@@ -4,7 +4,7 @@
  */
 
 // --- Constants & Pool Data ---
-const VERSION = '2.8.1';
+const VERSION = '2.9.0';
 
 // --- ESPN API Configuration ---
 const ESPN_STATS_URL = 'https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/2025/players?view=kona_player_info';
@@ -1431,27 +1431,66 @@ function renderRoster(l) {
     }
 
     const map = getTeamRosterMap(myTeam.roster);
-    grid.innerHTML = '';
+
+    // Build roster table
+    let tableHTML = `
+        <table class="player-table" style="width: 100%;">
+            <thead>
+                <tr>
+                    <th style="text-align: left; padding: 12px 16px;">SLOT</th>
+                    <th style="text-align: left; padding: 12px 16px;">PLAYER</th>
+                    <th style="text-align: center; padding: 12px 16px;">TEAM</th>
+                    <th style="text-align: center; padding: 12px 16px;">POS</th>
+                    <th style="text-align: center; padding: 12px 16px; color: var(--red);">POINTS</th>
+                    <th style="text-align: center; padding: 12px 16px;">PASS YDS</th>
+                    <th style="text-align: center; padding: 12px 16px;">PASS TD</th>
+                    <th style="text-align: center; padding: 12px 16px;">RUSH YDS</th>
+                    <th style="text-align: center; padding: 12px 16px;">RUSH TD</th>
+                    <th style="text-align: center; padding: 12px 16px;">RECS</th>
+                    <th style="text-align: center; padding: 12px 16px;">REC YDS</th>
+                    <th style="text-align: center; padding: 12px 16px;">REC TD</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
 
     SLOTS.forEach(slot => {
         const p = map[slot];
-        const box = document.createElement('div');
-        box.className = 'roster-slot-card';
 
-        box.innerHTML = `
-            <div class="slot-label">${slot}</div>
-            <div style="flex: 1;">
-                ${p ? `
-                    <div class="p-name">${p.name}</div>
-                    <div class="p-meta">${p.team} - ${p.pos}</div>
-                ` : `
-                    <div class="p-meta" style="font-style: italic; opacity: 0.5;">Empty</div>
-                `}
-            </div>
-            ${p ? `<div class="stat-cell active-stat" style="padding: 4px 10px; border-radius: 6px;">${p[state.statTab] || 0}</div>` : ''}
-        `;
-        grid.appendChild(box);
+        if (p) {
+            const pts = calculateFantasyPoints(p);
+            tableHTML += `
+                <tr style="border-bottom: 1px solid #eee;">
+                    <td style="padding: 12px 16px; font-weight: 800; color: var(--gray); font-size: 0.75rem;">${slot}</td>
+                    <td style="padding: 12px 16px; font-weight: 700;">${p.name}</td>
+                    <td style="text-align: center; padding: 12px 16px; font-weight: 800; color: var(--gray);">${p.team}</td>
+                    <td style="text-align: center; padding: 12px 16px; font-weight: 800; color: var(--gray);">${p.pos}</td>
+                    <td style="text-align: center; padding: 12px 16px; font-weight: 800; color: var(--red);">${pts}</td>
+                    <td style="text-align: center; padding: 12px 16px;">${Math.round(p.passYds || 0)}</td>
+                    <td style="text-align: center; padding: 12px 16px;">${p.passTD || 0}</td>
+                    <td style="text-align: center; padding: 12px 16px;">${Math.round(p.rushYds || 0)}</td>
+                    <td style="text-align: center; padding: 12px 16px;">${p.rushTD || 0}</td>
+                    <td style="text-align: center; padding: 12px 16px;">${p.recs || 0}</td>
+                    <td style="text-align: center; padding: 12px 16px;">${Math.round(p.recYds || 0)}</td>
+                    <td style="text-align: center; padding: 12px 16px;">${p.recTD || 0}</td>
+                </tr>
+            `;
+        } else {
+            tableHTML += `
+                <tr style="border-bottom: 1px solid #eee; opacity: 0.4;">
+                    <td style="padding: 12px 16px; font-weight: 800; color: var(--gray); font-size: 0.75rem;">${slot}</td>
+                    <td colspan="11" style="padding: 12px 16px; font-style: italic;">Empty</td>
+                </tr>
+            `;
+        }
     });
+
+    tableHTML += `
+            </tbody>
+        </table>
+    `;
+
+    grid.innerHTML = tableHTML;
 }
 
 // Global state for feed filter
