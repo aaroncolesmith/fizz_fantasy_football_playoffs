@@ -261,48 +261,195 @@ body {
     font-weight: 800;
 }
 
-/* --- Filters --- */
-.filter-group {
+/* --- Dropdown Filters --- */
+.filter-bar {
     display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 12px;
+    gap: 12px;
     align-items: center;
 }
 
-.filter-label {
-    font-size: 0.65rem;
-    font-weight: 800;
-    color: var(--gray);
-    text-transform: uppercase;
-    min-width: 80px;
+.filter-dropdown-container {
+    position: relative;
 }
 
-.chip {
-    padding: 6px 12px;
-    border-radius: 50px;
+.dropdown-trigger {
+    padding: 10px 16px;
     border: 1.5px solid var(--border);
+    border-radius: 8px;
+    background: white;
     font-size: 0.75rem;
     font-weight: 700;
     cursor: pointer;
-    background: white;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 160px;
+    justify-content: space-between;
     transition: all 0.2s;
-    user-select: none;
 }
 
-.chip:hover {
+.dropdown-trigger:hover {
     border-color: var(--text-black);
 }
 
-.chip.active {
-    background: var(--text-black);
-    color: white;
-    border-color: var(--text-black);
+.dropdown-trigger::after {
+    content: '▼';
+    font-size: 0.6rem;
+    opacity: 0.3;
 }
 
-.chip.active.red {
-    background: var(--red);
+.dropdown-trigger.active {
     border-color: var(--red);
+    background: #fffafa;
+}
+
+.dropdown-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 1000;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+    width: 260px;
+    padding: 14px;
+    margin-top: 6px;
+    animation: slideUp 0.2s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.dropdown-search {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.8rem;
+    margin-bottom: 12px;
+    outline: none;
+}
+
+.dropdown-search:focus {
+    border-color: var(--text-black);
+}
+
+.dropdown-links {
+    font-size: 0.7rem;
+    margin-bottom: 12px;
+    display: flex;
+    gap: 16px;
+    padding: 0 4px;
+}
+
+.dropdown-links a {
+    color: #1a73e8;
+    text-decoration: none;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.dropdown-links a:hover {
+    text-decoration: underline;
+}
+
+.dropdown-list {
+    max-height: 220px;
+    overflow-y: auto;
+    margin-bottom: 12px;
+    border-top: 1px solid var(--border);
+    padding-top: 8px;
+}
+
+/* Custom Scrollbar */
+.dropdown-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.dropdown-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.dropdown-list::-webkit-scrollbar-thumb {
+    background: #eee;
+    border-radius: 10px;
+}
+
+.dropdown-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 6px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 600;
+    gap: 12px;
+    border-radius: 6px;
+}
+
+.dropdown-item:hover {
+    background: #f8f9fa;
+}
+
+.dropdown-checkbox {
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--border);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    color: white;
+    flex-shrink: 0;
+}
+
+.dropdown-item.selected .dropdown-checkbox {
+    background: #1a73e8;
+    border-color: #1a73e8;
+}
+
+.dropdown-item.selected .dropdown-checkbox::after {
+    content: '✓';
+    font-weight: 900;
+}
+
+.dropdown-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+}
+
+.dropdown-footer button {
+    padding: 8px 18px;
+    font-size: 0.75rem;
+    font-weight: 800;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.btn-cancel {
+    background: white;
+    border: 1px solid var(--border);
+    color: var(--gray);
+}
+
+.btn-ok {
+    background: #0d652d;
+    /* Google Sheets Green */
+    border: 1px solid #0d652d;
+    color: white;
 }
 
 /* --- Buttons & Forms --- */

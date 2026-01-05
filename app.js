@@ -4,7 +4,7 @@
  */
 
 // --- Constants & Pool Data ---
-const VERSION = '1.5.0';
+const VERSION = '1.5.1';
 
 // Initialize Supabase (Using standard CDN global)
 const SUPABASE_URL = 'https://rchbzcfhnhshbvtjtfay.supabase.co';
@@ -44,11 +44,16 @@ let state = {
     view: 'dashboard',
     search: '',
     filters: {
-        pos: [],
+        pos: ['QB', 'RB', 'WR', 'TE', 'FLEX'],
         team: [],
         avail: ['undrafted']
     }
 };
+
+// --- Dropdown Management ---
+let openDropdown = null; // 'pos', 'team', or 'avail'
+let tempFilters = [];
+let dropdownSearch = '';
 
 // --- Helpers ---
 function isAdmin() {
@@ -397,38 +402,126 @@ function renderFilters(l) {
 
     // Get unique teams from player pool
     const teams = [...new Set(PLAYERS.map(p => p.team))].sort();
-    const positions = ['QB', 'RB', 'WR', 'TE', 'FLEX'];
-    const availability = ['undrafted', 'drafted'];
-
-    const isPosActive = (p) => state.filters.pos.includes(p);
-    const isTeamActive = (t) => state.filters.team.includes(t);
-    const isAvailActive = (a) => state.filters.avail.includes(a);
+    if (state.filters.team.length === 0) state.filters.team = [...teams];
 
     bar.innerHTML = `
-        <div class="filter-group">
-            <span class="filter-label">POS</span>
-            ${positions.map(p => `<div class="chip ${isPosActive(p) ? 'active' : ''}" onclick="toggleFilter('pos', '${p}')">${p}</div>`).join('')}
-        </div>
-        <div class="filter-group">
-            <span class="filter-label">TEAM</span>
-            ${teams.map(t => `<div class="chip ${isTeamActive(t) ? 'active' : ''}" onclick="toggleFilter('team', '${t}')">${t}</div>`).join('')}
-        </div>
-        <div class="filter-group">
-            <span class="filter-label">STATUS</span>
-            ${availability.map(a => `<div class="chip ${isAvailActive(a) ? 'active red' : ''}" onclick="toggleFilter('avail', '${a}')">${a.toUpperCase()}</div>`).join('')}
+        <div class="filter-bar">
+            ${renderDropdownField('POS', 'pos', ['QB', 'RB', 'WR', 'TE', 'FLEX'])}
+            ${renderDropdownField('TEAM', 'team', teams)}
+            ${renderDropdownField('STATUS', 'avail', ['undrafted', 'drafted'])}
         </div>
     `;
 }
 
-window.toggleFilter = (cat, val) => {
-    const current = state.filters[cat];
-    if (current.includes(val)) {
-        state.filters[cat] = current.filter(v => v !== val);
+function renderDropdownField(label, cat, items) {
+    const isActive = openDropdown === cat;
+    const selectedCount = state.filters[cat].length;
+    const totalCount = items.length;
+
+    let displayValue = selectedCount === totalCount ? 'All' : `${selectedCount} selected`;
+    if (selectedCount === 0) displayValue = 'None';
+
+    return `
+        <div class="filter-dropdown-container" id="dropdown-${cat}">
+            <div class="dropdown-trigger ${isActive ? 'active' : ''}" onclick="toggleDropdown(event, '${cat}')">
+                <div style="display:flex; flex-direction:column;">
+                    <span style="font-size:0.55rem; color:var(--gray); text-transform:uppercase;">${label}</span>
+                    <span>${displayValue}</span>
+                </div>
+            </div>
+            ${isActive ? renderDropdownMenu(cat, items) : ''}
+        </div>
+    `;
+}
+
+function renderDropdownMenu(cat, items) {
+    const filtered = items.filter(i => i.toLowerCase().includes(dropdownSearch.toLowerCase()));
+
+    return `
+        <div class="dropdown-menu" onclick="event.stopPropagation()">
+            <input type="text" class="dropdown-search" placeholder="Search..." value="${dropdownSearch}" 
+                   oninput="handleDropdownSearch(event, '${cat}')" autofocus>
+            
+            <div class="dropdown-links">
+                <a onclick="setAllTemp('${cat}', true)">Select all</a>
+                <span style="color:var(--border)">|</span>
+                <a onclick="setAllTemp('${cat}', false)">Clear</a>
+            </div>
+
+            <div class="dropdown-list">
+                ${filtered.map(i => `
+                    <div class="dropdown-item ${tempFilters.includes(i) ? 'selected' : ''}" onclick="toggleTempFilter('${i}')">
+                        <div class="dropdown-checkbox"></div>
+                        <span>${i.toUpperCase()}</span>
+                    </div>
+                `).join('')}
+            </div>
+
+            <div class="dropdown-footer">
+                <button class="btn-cancel" onclick="closeDropdown()">Cancel</button>
+                <button class="btn-ok" onclick="applyDropdown('${cat}')">OK</button>
+            </div>
+        </div>
+    `;
+}
+
+window.toggleDropdown = (e, cat) => {
+    e.stopPropagation();
+    if (openDropdown === cat) {
+        closeDropdown();
     } else {
-        state.filters[cat].push(val);
+        openDropdown = cat;
+        tempFilters = [...state.filters[cat]];
+        dropdownSearch = '';
+        renderFilters();
     }
+};
+
+window.closeDropdown = () => {
+    openDropdown = null;
+    tempFilters = [];
+    dropdownSearch = '';
+    renderFilters();
+};
+
+window.handleDropdownSearch = (e, cat) => {
+    dropdownSearch = e.target.value;
+    // We need to re-render the menu. Instead of full updateUI (expensive), 
+    // we just re-render the filters which contains the menu.
+    renderFilters();
+};
+
+window.setAllTemp = (cat, all) => {
+    if (all) {
+        // Items depend on cat
+        if (cat === 'pos') tempFilters = ['QB', 'RB', 'WR', 'TE', 'FLEX'];
+        else if (cat === 'avail') tempFilters = ['undrafted', 'drafted'];
+        else if (cat === 'team') tempFilters = [...new Set(PLAYERS.map(p => p.team))].sort();
+    } else {
+        tempFilters = [];
+    }
+    renderFilters();
+};
+
+window.toggleTempFilter = (val) => {
+    if (tempFilters.includes(val)) {
+        tempFilters = tempFilters.filter(v => v !== val);
+    } else {
+        tempFilters.push(val);
+    }
+    renderFilters();
+};
+
+window.applyDropdown = (cat) => {
+    state.filters[cat] = [...tempFilters];
+    closeDropdown();
     updateUI();
 };
+
+// Global click listener to close dropdowns
+document.addEventListener('click', () => {
+    if (openDropdown) closeDropdown();
+});
 
 function renderPlayerList(l) {
     const c = document.getElementById('player-list');
