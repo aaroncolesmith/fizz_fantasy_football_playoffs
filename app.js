@@ -4,7 +4,7 @@
  */
 
 // --- Constants & Pool Data ---
-const VERSION = '1.6.7';
+const VERSION = '1.7.0';
 
 // Initialize Supabase (Using standard CDN global)
 const SUPABASE_URL = 'https://rchbzcfhnhshbvtjtfay.supabase.co';
@@ -210,57 +210,93 @@ window.handleJoinCode = async function () {
 async function refreshGlobalState() {
     if (!supabase) return;
     try {
-        console.log("🔍 Global Cloud Refresh...");
+        const username = state.currentUser || localStorage.getItem(KEY_USER) || '';
+        if (!username) return;
 
-        // Fetch all recent states to ensure we don't miss anything
-        const { data, error } = await supabase
-            .from('play_events')
-            .select('*')
-            .eq('event_type', 'FIZZYFEST_STATE')
-            .order('occurred_at', { ascending: false })
-            .limit(50);
+        console.log(`📡 Requesting Global Sync for: ${username}...`);
 
-        if (error) throw error;
+        // Fetch snapshots specifically created by this user + the most recent global snapshots
+        const [userEvents, recentEvents] = await Promise.all([
+            supabase
+                .from('play_events')
+                .select('*')
+                .eq('event_type', 'FIZZYFEST_STATE')
+                .eq('player_name', username)
+                .order('occurred_at', { ascending: false })
+                .limit(50),
+            supabase
+                .from('play_events')
+                .select('*')
+                .eq('event_type', 'FIZZYFEST_STATE')
+                .order('occurred_at', { ascending: false })
+                .limit(200)
+        ]);
 
-        if (data && data.length > 0) {
-            const latestLeaguesMap = {};
-            let foundAny = false;
+        const allData = [...(userEvents.data || []), ...(recentEvents.data || [])];
+        if (allData.length === 0) {
+            console.log("No cloud data found.");
+            return false;
+        }
 
-            data.forEach(event => {
-                if (event.event_data && Array.isArray(event.event_data.leagues)) {
-                    event.event_data.leagues.forEach(l => {
-                        const normalizedUser = (state.currentUser || '').toLowerCase();
-                        const isCreator = l.creator.toLowerCase() === normalizedUser;
-                        const isMember = l.teams.some(t => t.name.toLowerCase() === normalizedUser);
+        const latestLeaguesMap = {};
+        const normalizedUser = username.toLowerCase();
+        let foundAnything = false;
 
-                        if (isCreator || isMember) {
-                            foundAny = true;
-                            const existing = latestLeaguesMap[l.id];
-                            const incomingPicks = l.picks?.length || 0;
-                            const existingPicks = existing?.picks?.length || 0;
+        // Sort data by pick count and then date to ensure we process most advanced first
+        allData.forEach(event => {
+            if (event.event_data && Array.isArray(event.event_data.leagues)) {
+                event.event_data.leagues.forEach(l => {
+                    const isCreator = (l.creator || '').toLowerCase() === normalizedUser;
+                    const isMember = l.teams && l.teams.some(t => (t.name || '').toLowerCase() === normalizedUser);
 
-                            if (!existing || incomingPicks > existingPicks) {
-                                latestLeaguesMap[l.id] = l;
-                            }
+                    if (isCreator || isMember) {
+                        foundAnything = true;
+                        const existing = latestLeaguesMap[l.id];
+                        const incomingPicks = l.picks?.length || 0;
+                        const existingPicks = existing?.picks?.length || 0;
+
+                        // Merge Rule: Most picks wins. 
+                        if (!existing || incomingPicks > existingPicks) {
+                            latestLeaguesMap[l.id] = l;
                         }
-                    });
-                }
-            });
-
-            const allLeagues = Object.values(latestLeaguesMap);
-            if (allLeagues.length > 0) {
-                state.leagues = allLeagues;
-                localStorage.setItem(KEY_LEAGUES, JSON.stringify(state.leagues));
-                console.log(`✅ Global Refresh: Found ${allLeagues.length} leagues for ${state.currentUser}.`);
-                return true;
-            } else if (foundAny) {
-                console.log("Empty leagues list despite finding involvement.");
+                    }
+                });
             }
+            // Adopt the sync ID of the most recent event found that includes us
+            if (!CLOUD_SYNC_ID && event.game_code) {
+                CLOUD_SYNC_ID = event.game_code;
+                localStorage.setItem('ff_sync_id', CLOUD_SYNC_ID);
+            }
+        });
+
+        const allLeagues = Object.values(latestLeaguesMap);
+        if (allLeagues.length > 0) {
+            state.leagues = allLeagues;
+            localStorage.setItem(KEY_LEAGUES, JSON.stringify(state.leagues));
+            console.log(`🏆 Global Sync Complete: Found ${allLeagues.length} leagues.`);
+            updateUI();
+            return true;
         }
     } catch (e) {
         console.warn("Global Refresh Failed", e);
     }
     return false;
+}
+
+window.forceCloudSync = async function () {
+    const btn = document.getElementById('debug-force-sync');
+    if (btn) btn.innerText = 'SYNCING...';
+
+    console.log("🌀 Forced Cloud Sync initiated...");
+    const recovered = await refreshGlobalState();
+
+    if (recovered) {
+        alert(`SUCCESS: Found ${state.leagues.length} leagues in the cloud.`);
+        updateUI();
+    } else {
+        alert("CLOUD REFRESH COMPLETE: No new or different league data found.");
+    }
+    if (btn) btn.innerText = 'Force Cloud Sync';
 }
 
 window.copyLeagueCode = function (e) {
@@ -895,10 +931,16 @@ function setupListeners() {
         const input = document.getElementById('login-username').value.trim();
         if (!input) return alert('NAME REQUIRED');
 
+        const btn = document.getElementById('login-btn');
+        const originalText = btn.innerText;
+        btn.innerText = 'SYNCING LEAGUES...';
+        btn.disabled = true;
+
         const normalized = input.toLowerCase();
 
         // 1. Global Search: See if Supabase knows about this user in any league
         console.log("Searching Supabase for user records...");
+        state.currentUser = input; // Set temporarily for the sync query
         await refreshGlobalState();
 
         const isAaron = normalized === 'aaron';
@@ -908,11 +950,13 @@ function setupListeners() {
         );
 
         if (isAaron || isKnown) {
-            state.currentUser = input;
             await saveSession();
             initApp();
         } else {
-            alert(`USER "${input}" NOT FOUND IN ANY CLOUD LEAGUES. ASK AARON TO BE ADDED.`);
+            btn.innerText = originalText;
+            btn.disabled = false;
+            state.currentUser = null;
+            alert(`USER "${input}" NOT FOUND IN ANY CLOUD RECORDS. ENSURE YOU CREATED A LEAGUE ON YOUR OTHER DEVICE FIRST.`);
         }
     };
 
@@ -1013,10 +1057,11 @@ function updateDebugInfo() {
     });
 
     c.innerHTML = `
-        <strong>VER:</strong> ${VERSION}<br>
-        <strong>SYNC CODE:</strong> <span style="color:var(--red); font-weight:800;">${CLOUD_SYNC_ID || 'PENDING (SAVE REQD)'}</span><br>
-        <strong>LEAGUES:</strong> ${state.leagues.length}<br>
-        <strong>AUTH LIST:</strong> ${[...new Set(users)].join(', ') || 'NONE'}
+        <div class="mb-2"><strong>VER:</strong> ${VERSION}</div>
+        <div class="mb-2"><strong>SYNC CODE:</strong> <span style="color:var(--red); font-weight:800;">${CLOUD_SYNC_ID || 'PENDING'}</span></div>
+        <div class="mb-2"><strong>LEAGUES:</strong> ${state.leagues.length}</div>
+        <div class="mb-4"><strong>AUTH:</strong> ${[...new Set(users)].join(', ') || 'NONE'}</div>
+        <button id="debug-force-sync" onclick="forceCloudSync()" class="btn primary p-2 w-full" style="font-size: 0.6rem;">Force Cloud Sync</button>
     `;
 }
 
