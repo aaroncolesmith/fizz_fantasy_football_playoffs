@@ -4,7 +4,7 @@
  */
 
 // --- Constants & Pool Data ---
-const VERSION = '1.4.0';
+const VERSION = '1.4.1';
 
 // Initialize Supabase (Using standard CDN global)
 const SUPABASE_URL = 'https://rchbzcfhnhshbvtjtfay.supabase.co';
@@ -67,14 +67,14 @@ window.saveSession = async function () {
             try {
                 const { error } = await supabase
                     .from('play_events')
-                    .upsert({
+                    .insert({
                         game_code: CLOUD_SYNC_ID,
                         hand_number: 999, // Reserved for state sync
                         event_type: 'FIZZYFEST_STATE',
                         event_data: { leagues: state.leagues },
                         player_name: state.currentUser,
                         occurred_at: new Date().toISOString()
-                    }, { onConflict: 'game_code,event_type' });
+                    });
 
                 if (error) throw error;
                 console.log("Cloud Sync Successful");
