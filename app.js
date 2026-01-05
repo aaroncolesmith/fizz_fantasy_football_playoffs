@@ -4,7 +4,7 @@
  */
 
 // --- Constants & Pool Data ---
-const VERSION = '3.1.0'; // Newest Universe Priority
+const VERSION = '3.1.1'; // Newest Universe Priority
 
 // --- ESPN API Configuration ---
 const ESPN_STATS_URL = 'https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/2025/players?view=kona_player_info';
@@ -578,14 +578,19 @@ window.forceCloudSync = async function () {
     const btn = document.getElementById('debug-force-sync');
     if (btn) btn.innerText = 'SYNCING...';
 
-    console.log("🌀 Forced Cloud Sync initiated...");
+    console.log("🌀 Forced Cloud Sync initiated (Full wipe)...");
+
+    // Clear local league cache to ensure we get a fresh build from the cloud
+    state.leagues = [];
+    localStorage.removeItem(KEY_LEAGUES);
+
     const recovered = await refreshGlobalState();
 
     if (recovered) {
-        alert(`SUCCESS: Found ${state.leagues.length} leagues in the cloud.`);
+        alert(`SUCCESS: Restored ${state.leagues.length} leagues from the cloud.`);
         updateUI();
     } else {
-        alert("CLOUD REFRESH COMPLETE: No new or different league data found.");
+        alert("CLOUD REFRESH COMPLETE: No league data found for your username.");
     }
     if (btn) btn.innerText = 'Force Cloud Sync';
 }
