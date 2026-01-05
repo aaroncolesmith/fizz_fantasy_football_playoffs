@@ -4,7 +4,7 @@
  */
 
 // --- Constants & Pool Data ---
-const VERSION = '2.9.3';
+const VERSION = '2.9.4';
 
 // --- ESPN API Configuration ---
 const ESPN_STATS_URL = 'https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/2025/players?view=kona_player_info';
@@ -107,9 +107,11 @@ const PLAYERS = [
     { id: 50, name: 'Adam Thielen', pos: 'WR', team: 'PIT', passTD: 0, rushTD: 0, recTD: 4, recs: 58 },
     { id: 51, name: 'Van Jefferson', pos: 'WR', team: 'PIT', passTD: 0, rushTD: 0, recTD: 2, recs: 25 },
     { id: 52, name: 'Calvin Austin III', pos: 'WR', team: 'PIT', passTD: 0, rushTD: 0, recTD: 2, recs: 22 },
+    { id: 56, name: 'Roman Wilson', pos: 'WR', team: 'PIT', passTD: 0, rushTD: 0, recTD: 2, recs: 12, recYds: 166 },
     { id: 53, name: 'Pat Freiermuth', pos: 'TE', team: 'PIT', passTD: 0, rushTD: 0, recTD: 4, recs: 55 },
     { id: 54, name: 'Darnell Washington', pos: 'TE', team: 'PIT', passTD: 0, rushTD: 0, recTD: 1, recs: 18 },
     { id: 55, name: 'Connor Heyward', pos: 'TE', team: 'PIT', passTD: 0, rushTD: 0, recTD: 1, recs: 15 },
+    { id: 57, name: 'Jonnu Smith', pos: 'TE', team: 'PIT', passTD: 0, rushTD: 0, recTD: 2, recs: 30, recYds: 220 },
 
     // AFC #5 - Houston Texans (HOU)
     { id: 56, name: 'C.J. Stroud', pos: 'QB', team: 'HOU', passTD: 28, rushTD: 2, recTD: 0, recs: 0 },
