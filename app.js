@@ -4,7 +4,7 @@
  */
 
 // --- Constants & Pool Data ---
-const VERSION = '1.7.1';
+const VERSION = '1.8.0';
 
 // Initialize Supabase (Using standard CDN global)
 const SUPABASE_URL = 'https://rchbzcfhnhshbvtjtfay.supabase.co';
@@ -14,21 +14,116 @@ const supabase = (window.supabase) ? window.supabase.createClient(SUPABASE_URL, 
 // We use a "Local Mirror" of the cloud ID (Sync Code)
 let CLOUD_SYNC_ID = localStorage.getItem('ff_sync_id') || null;
 const PLAYERS = [
-    { id: 1, name: 'Josh Allen', pos: 'QB', team: 'BUF' },
-    { id: 2, name: 'James Cook', pos: 'RB', team: 'BUF' },
-    { id: 3, name: 'Dalton Kincaid', pos: 'TE', team: 'BUF' },
-    { id: 4, name: 'Patrick Mahomes', pos: 'QB', team: 'KC' },
-    { id: 5, name: 'Isiah Pacheco', pos: 'RB', team: 'KC' },
-    { id: 6, name: 'Travis Kelce', pos: 'TE', team: 'KC' },
-    { id: 7, name: 'Lamar Jackson', pos: 'QB', team: 'BAL' },
-    { id: 8, name: 'Derrick Henry', pos: 'RB', team: 'BAL' },
-    { id: 9, name: 'Amon-Ra St. Brown', pos: 'WR', team: 'DET' },
-    { id: 10, name: 'Christian McCaffrey', pos: 'RB', team: 'SF' },
-    { id: 11, name: 'CeeDee Lamb', pos: 'WR', team: 'DAL' },
-    { id: 12, name: 'Jalen Hurts', pos: 'QB', team: 'PHI' },
-    { id: 13, name: 'Saquon Barkley', pos: 'RB', team: 'PHI' },
-    { id: 14, name: 'Tyreek Hill', pos: 'WR', team: 'MIA' },
-    { id: 15, name: 'Amari Cooper', pos: 'WR', team: 'CLE' }
+    // AFC #1 - Denver Broncos
+    { id: 1, name: 'Bo Nix', pos: 'QB', team: 'DEN' },
+    { id: 2, name: 'RJ Harvey', pos: 'RB', team: 'DEN' },
+    { id: 3, name: 'Courtland Sutton', pos: 'WR', team: 'DEN' },
+    { id: 4, name: 'Marvin Mims Jr.', pos: 'WR', team: 'DEN' },
+    { id: 5, name: 'Troy Franklin', pos: 'WR', team: 'DEN' },
+    { id: 6, name: 'Evan Engram', pos: 'TE', team: 'DEN' },
+
+    // AFC #2 - New England Patriots
+    { id: 7, name: 'Drake Maye', pos: 'QB', team: 'NE' },
+    { id: 8, name: 'Rhamondre Stevenson', pos: 'RB', team: 'NE' },
+    { id: 9, name: 'TreVeyon Henderson', pos: 'RB', team: 'NE' },
+    { id: 10, name: 'Stefon Diggs', pos: 'WR', team: 'NE' },
+    { id: 11, name: 'DeMario Douglas', pos: 'WR', team: 'NE' },
+    { id: 12, name: 'Hunter Henry', pos: 'TE', team: 'NE' },
+
+    // AFC #3 - Jacksonville Jaguars
+    { id: 13, name: 'Trevor Lawrence', pos: 'QB', team: 'JAX' },
+    { id: 14, name: 'Travis Etienne Jr.', pos: 'RB', team: 'JAX' },
+    { id: 15, name: 'Brian Thomas Jr.', pos: 'WR', team: 'JAX' },
+    { id: 16, name: 'Parker Washington', pos: 'WR', team: 'JAX' },
+    { id: 17, name: 'Jakobi Meyers', pos: 'WR', team: 'JAX' },
+    { id: 18, name: 'Brenton Strange', pos: 'TE', team: 'JAX' },
+
+    // AFC #4 - Pittsburgh Steelers
+    { id: 19, name: 'Aaron Rodgers', pos: 'QB', team: 'PIT' },
+    { id: 20, name: 'Jaylen Warren', pos: 'RB', team: 'PIT' },
+    { id: 21, name: 'Kenneth Gainwell', pos: 'RB', team: 'PIT' },
+    { id: 22, name: 'Adam Thielen', pos: 'WR', team: 'PIT' },
+    { id: 23, name: 'George Pickens', pos: 'WR', team: 'PIT' },
+    { id: 24, name: 'Pat Freiermuth', pos: 'TE', team: 'PIT' },
+
+    // AFC #5 - Houston Texans
+    { id: 25, name: 'C.J. Stroud', pos: 'QB', team: 'HOU' },
+    { id: 26, name: 'Joe Mixon', pos: 'RB', team: 'HOU' },
+    { id: 27, name: 'Nico Collins', pos: 'WR', team: 'HOU' },
+    { id: 28, name: 'Tank Dell', pos: 'WR', team: 'HOU' },
+    { id: 29, name: 'Dalton Schultz', pos: 'TE', team: 'HOU' },
+
+    // AFC #6 - Buffalo Bills
+    { id: 30, name: 'Josh Allen', pos: 'QB', team: 'BUF' },
+    { id: 31, name: 'James Cook', pos: 'RB', team: 'BUF' },
+    { id: 32, name: 'Khalil Shakir', pos: 'WR', team: 'BUF' },
+    { id: 33, name: 'Keon Coleman', pos: 'WR', team: 'BUF' },
+    { id: 34, name: 'Dalton Kincaid', pos: 'TE', team: 'BUF' },
+    { id: 35, name: 'Dawson Knox', pos: 'TE', team: 'BUF' },
+
+    // AFC #7 - Los Angeles Chargers
+    { id: 36, name: 'Justin Herbert', pos: 'QB', team: 'LAC' },
+    { id: 37, name: 'Omarion Hampton', pos: 'RB', team: 'LAC' },
+    { id: 38, name: 'Kimani Vidal', pos: 'RB', team: 'LAC' },
+    { id: 39, name: 'Ladd McConkey', pos: 'WR', team: 'LAC' },
+    { id: 40, name: 'Quentin Johnston', pos: 'WR', team: 'LAC' },
+    { id: 41, name: 'Oronde Gadsden', pos: 'TE', team: 'LAC' },
+
+    // NFC #1 - Seattle Seahawks
+    { id: 42, name: 'Sam Darnold', pos: 'QB', team: 'SEA' },
+    { id: 43, name: 'Kenneth Walker III', pos: 'RB', team: 'SEA' },
+    { id: 44, name: 'Zach Charbonnet', pos: 'RB', team: 'SEA' },
+    { id: 45, name: 'Jaxon Smith-Njigba', pos: 'WR', team: 'SEA' },
+    { id: 46, name: 'Cooper Kupp', pos: 'WR', team: 'SEA' },
+    { id: 47, name: 'Noah Fant', pos: 'TE', team: 'SEA' },
+
+    // NFC #2 - Chicago Bears
+    { id: 48, name: 'Caleb Williams', pos: 'QB', team: 'CHI' },
+    { id: 49, name: 'D\'Andre Swift', pos: 'RB', team: 'CHI' },
+    { id: 50, name: 'Roschon Johnson', pos: 'RB', team: 'CHI' },
+    { id: 51, name: 'D.J. Moore', pos: 'WR', team: 'CHI' },
+    { id: 52, name: 'Rome Odunze', pos: 'WR', team: 'CHI' },
+    { id: 53, name: 'Cole Kmet', pos: 'TE', team: 'CHI' },
+
+    // NFC #3 - Philadelphia Eagles
+    { id: 54, name: 'Jalen Hurts', pos: 'QB', team: 'PHI' },
+    { id: 55, name: 'Saquon Barkley', pos: 'RB', team: 'PHI' },
+    { id: 56, name: 'A.J. Brown', pos: 'WR', team: 'PHI' },
+    { id: 57, name: 'DeVonta Smith', pos: 'WR', team: 'PHI' },
+    { id: 58, name: 'Jahan Dotson', pos: 'WR', team: 'PHI' },
+    { id: 59, name: 'Dallas Goedert', pos: 'TE', team: 'PHI' },
+
+    // NFC #4 - Carolina Panthers
+    { id: 60, name: 'Bryce Young', pos: 'QB', team: 'CAR' },
+    { id: 61, name: 'Chuba Hubbard', pos: 'RB', team: 'CAR' },
+    { id: 62, name: 'Trevor Etienne', pos: 'RB', team: 'CAR' },
+    { id: 63, name: 'Xavier Legette', pos: 'WR', team: 'CAR' },
+    { id: 64, name: 'Hunter Renfrow', pos: 'WR', team: 'CAR' },
+    { id: 65, name: 'Tommy Tremble', pos: 'TE', team: 'CAR' },
+
+    // NFC #5 - Los Angeles Rams
+    { id: 66, name: 'Matthew Stafford', pos: 'QB', team: 'LAR' },
+    { id: 67, name: 'Kyren Williams', pos: 'RB', team: 'LAR' },
+    { id: 68, name: 'Blake Corum', pos: 'RB', team: 'LAR' },
+    { id: 69, name: 'Puka Nacua', pos: 'WR', team: 'LAR' },
+    { id: 70, name: 'Davante Adams', pos: 'WR', team: 'LAR' },
+    { id: 71, name: 'Colby Parkinson', pos: 'TE', team: 'LAR' },
+
+    // NFC #6 - San Francisco 49ers
+    { id: 72, name: 'Brock Purdy', pos: 'QB', team: 'SF' },
+    { id: 73, name: 'Christian McCaffrey', pos: 'RB', team: 'SF' },
+    { id: 74, name: 'Deebo Samuel', pos: 'WR', team: 'SF' },
+    { id: 75, name: 'Jauan Jennings', pos: 'WR', team: 'SF' },
+    { id: 76, name: 'Ricky Pearsall', pos: 'WR', team: 'SF' },
+    { id: 77, name: 'George Kittle', pos: 'TE', team: 'SF' },
+
+    // NFC #7 - Green Bay Packers
+    { id: 78, name: 'Jordan Love', pos: 'QB', team: 'GB' },
+    { id: 79, name: 'Josh Jacobs', pos: 'RB', team: 'GB' },
+    { id: 80, name: 'Christian Watson', pos: 'WR', team: 'GB' },
+    { id: 81, name: 'Romeo Doubs', pos: 'WR', team: 'GB' },
+    { id: 82, name: 'Jayden Reed', pos: 'WR', team: 'GB' },
+    { id: 83, name: 'Luke Musgrave', pos: 'TE', team: 'GB' }
 ];
 const SLOTS = ['QB', 'RB1', 'RB2', 'WR1', 'WR2', 'TE', 'FLEX1', 'FLEX2'];
 
