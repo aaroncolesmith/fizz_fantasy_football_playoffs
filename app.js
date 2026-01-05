@@ -4,7 +4,7 @@
  */
 
 // --- Constants & Pool Data ---
-const VERSION = '1.6.1';
+const VERSION = '1.6.2';
 
 // Initialize Supabase (Using standard CDN global)
 const SUPABASE_URL = 'https://rchbzcfhnhshbvtjtfay.supabase.co';
@@ -208,7 +208,7 @@ async function refreshGlobalState() {
     return false;
 }
 
-window.copySyncCode = function (e) {
+window.copyLeagueCode = function (e) {
     if (e) e.stopPropagation();
     if (!CLOUD_SYNC_ID) return;
     navigator.clipboard.writeText(CLOUD_SYNC_ID).then(() => {
@@ -218,9 +218,15 @@ window.copySyncCode = function (e) {
             btn.innerText = 'COPIED!';
             setTimeout(() => btn.innerText = originalText, 2000);
         } else {
-            alert("SYNC CODE COPIED TO CLIPBOARD!");
+            alert("LEAGUE CODE COPIED TO CLIPBOARD!");
         }
     });
+};
+
+window.toggleLeagueCode = function (e) {
+    if (e) e.stopPropagation();
+    const badges = document.querySelectorAll('.league-code-container');
+    badges.forEach(b => b.classList.toggle('hidden'));
 };
 
 function clearSession() {
@@ -363,15 +369,15 @@ function renderLeagues() {
             <div class="league-card" onclick="navigate('league-detail', '${l.id}')">
                 <h3>${l.name}</h3>
                 <p>${l.teams.length} Teams</p>
-                <div class="${CLOUD_SYNC_ID ? 'sync-code-badge' : ''}" 
-                     style="${!CLOUD_SYNC_ID ? 'font-size: 0.6rem; color: var(--red); font-weight: 800; margin-top: 10px;' : ''}"
-                     onclick="event.stopPropagation()">
+                <div class="mt-4" onclick="event.stopPropagation()">
                     ${CLOUD_SYNC_ID ? `
-                        <span>SYNC: ${CLOUD_SYNC_ID}</span>
-                        <button onclick="window.copySyncCode(event)" class="btn-mini text-link" style="padding:0; margin-left:8px; font-size:0.6rem;">[COPY]</button>
+                        <button onclick="toggleLeagueCode(event)" class="btn-mini" style="opacity: 0.3; border:none; background:transparent;">Show Code</button>
+                        <div class="league-code-container sync-code-badge hidden" style="margin-top:4px;">
+                            <span>${CLOUD_SYNC_ID}</span>
+                            <button onclick="window.copyLeagueCode(event)" class="btn-mini text-link" style="padding:0; margin-left:8px; font-size:0.6rem;">[COPY]</button>
+                        </div>
                     ` : `
-                        CLOUD SYNC PENDING <br> 
-                        <button onclick="event.stopPropagation(); window.saveSession();" class="btn-mini red mt-4">Manual Sync</button>
+                        <span style="font-size:0.6rem; color:var(--red); font-weight:800;">OFFLINE</span>
                     `}
                 </div>
             </div>
@@ -387,9 +393,12 @@ function renderLeagueStats(l) {
         <div class="d-flex justify-between items-center mb-6">
             <h2 style="font-weight: 800; letter-spacing: -1px; text-transform: uppercase;">${l.name}</h2>
             ${CLOUD_SYNC_ID ? `
-                <div class="sync-code-badge" style="margin-top:0; font-size:0.7rem;">
-                    SYNC: ${CLOUD_SYNC_ID}
-                    <button onclick="window.copySyncCode(event)" class="btn-mini text-link" style="padding:0; margin-left:8px; font-size:0.6rem;">[COPY]</button>
+                <div style="text-align:right;">
+                    <button onclick="toggleLeagueCode(event)" class="btn-mini" style="opacity: 0.3; border:none; background:transparent;">Show Code</button>
+                    <div class="league-code-container sync-code-badge hidden" style="margin-top:0; font-size:0.7rem;">
+                        <span>CODE: ${CLOUD_SYNC_ID}</span>
+                        <button onclick="window.copyLeagueCode(event)" class="btn-mini text-link" style="padding:0; margin-left:8px; font-size:0.6rem;">[COPY]</button>
+                    </div>
                 </div>
             ` : ''}
         </div>
