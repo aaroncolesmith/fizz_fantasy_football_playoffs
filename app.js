@@ -458,19 +458,19 @@ async function loadFromCloud(syncId) {
                     });
                 }
             });
-    if (foundAny) {
-        CLOUD_SYNC_ID = id;
-        localStorage.setItem('ff_sync_id', id);
-        localStorage.setItem(KEY_LEAGUES, JSON.stringify(state.leagues));
-        console.log("✅ Cloud Sync Success for", id);
-        updateUI();
-        return true;
-    }
-}
+            if (foundAny) {
+                CLOUD_SYNC_ID = id;
+                localStorage.setItem('ff_sync_id', id);
+                localStorage.setItem(KEY_LEAGUES, JSON.stringify(state.leagues));
+                console.log("✅ Cloud Sync Success for", id);
+                updateUI();
+                return true;
+            }
+        }
     } catch (e) {
-    console.warn("❌ Cloud Pull Failed", e);
-}
-return false;
+        console.warn("❌ Cloud Pull Failed", e);
+    }
+    return false;
 }
 
 window.handleJoinCode = async function () {
@@ -509,7 +509,6 @@ async function refreshGlobalState() {
 
         console.log(`📡 Requesting Global Sync for: ${username}...`);
 
-        // Fetch snapshots specifically created by this user + the most recent global snapshots
         const [userEvents, recentEvents] = await Promise.all([
             supabase
                 .from('play_events')
@@ -536,7 +535,9 @@ async function refreshGlobalState() {
         const normalizedUser = username.toLowerCase();
         let foundAnything = false;
 
-        // Sort data by pick count and then date to ensure we process most advanced first
+        // Sort data by date to process newest snapshots first
+        allData.sort((a, b) => new Date(b.occurred_at) - new Date(a.occurred_at));
+
         allData.forEach(event => {
             if (event.event_data && Array.isArray(event.event_data.leagues)) {
                 event.event_data.leagues.forEach(l => {
@@ -544,27 +545,31 @@ async function refreshGlobalState() {
                     const isMember = l.teams && l.teams.some(t => (t.name || '').toLowerCase() === normalizedUser);
 
                     if (isCreator || isMember) {
-        const latestLeaguesMap = {};
-        const leagueTimeMap = {}; // Track timestamps
-                        const existing = latestLeaguesMap[l.id];
-                        const incomingPicks = l.picks?.length || 0;
-                        const existingPicks = existing?.picks?.length || 0;
-        // Sort data by date to process newest first
-        allData.sort((a,b) => new Date(b.occurred_at) - new Date(a.occurred_at));
-        
-        allData.forEach(event => {
-            if (event.event_data && Array.isArray(event.event_data.leagues)) {
-                event.event_data.leagues.forEach(l => {
-                    const isCreator = (l.creator || '').toLowerCase() === normalizedUser;
-                    const isMember = l.teams && l.teams.some(t => (t.name || '').toLowerCase() === normalizedUser);
-                    if (isCreator || isMember) {
                         foundAnything = true;
+                        // Rule: First one seen in the sorted list is the newest
                         if (!latestLeaguesMap[l.id]) {
                             latestLeaguesMap[l.id] = l;
                         }
                     }
                 });
             }
+            // Adopt the sync ID of the absolute most recent event found that includes us
+            if (!CLOUD_SYNC_ID && event.game_code && foundAnything) {
+                CLOUD_SYNC_ID = event.game_code;
+                localStorage.setItem('ff_sync_id', CLOUD_SYNC_ID);
+            }
+        });
+
+        const allLeagues = Object.values(latestLeaguesMap);
+        if (allLeagues.length > 0) {
+            state.leagues = allLeagues;
+            localStorage.setItem(KEY_LEAGUES, JSON.stringify(state.leagues));
+            console.log(`🏆 Global Sync Complete: Found ${allLeagues.length} leagues.`);
+            updateUI();
+            return true;
+        }
+    } catch (e) {
+        console.warn("Global Refresh Failed", e);
     }
     return false;
 }
