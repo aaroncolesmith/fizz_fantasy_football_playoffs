@@ -4,7 +4,7 @@
  */
 
 // --- Constants & Pool Data ---
-const VERSION = '1.5.1';
+const VERSION = '1.6.1';
 
 // Initialize Supabase (Using standard CDN global)
 const SUPABASE_URL = 'https://rchbzcfhnhshbvtjtfay.supabase.co';
@@ -30,7 +30,7 @@ const PLAYERS = [
     { id: 14, name: 'Tyreek Hill', pos: 'WR', team: 'MIA' },
     { id: 15, name: 'Amari Cooper', pos: 'WR', team: 'CLE' }
 ];
-const SLOTS = ['QB', 'WR', 'WR', 'RB', 'RB', 'TE', 'FLEX', 'FLEX'];
+const SLOTS = ['QB', 'RB1', 'RB2', 'WR1', 'WR2', 'TE', 'FLEX1', 'FLEX2'];
 
 // --- Persistence Keys ---
 const KEY_LEAGUES = 'ff_leagues_v1';
@@ -232,6 +232,39 @@ function clearSession() {
     // but the session (who is logged in) is cleared.
 }
 
+// --- Realtime Sync ---
+function subscribeToChanges() {
+    if (!supabase) return;
+
+    // Listen for NEW state events in the play_events table
+    // filter by event_type to only get state snapshots
+    supabase
+        .channel('public:play_events')
+        .on('postgres_changes', {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'play_events',
+            filter: `event_type=eq.FIZZYFEST_STATE`
+        }, payload => {
+            console.log('Realtime Update Received:', payload);
+            if (payload.new && payload.new.event_data && Array.isArray(payload.new.event_data.leagues)) {
+                // Merge/Overlay the incoming leagues into our state
+                // We trust the latest insert as the truth
+                state.leagues = payload.new.event_data.leagues;
+                localStorage.setItem(KEY_LEAGUES, JSON.stringify(state.leagues));
+
+                // If the incoming event has a game_code, ensure we store it if we don't have one
+                if (!CLOUD_SYNC_ID && payload.new.game_code) {
+                    CLOUD_SYNC_ID = payload.new.game_code;
+                    localStorage.setItem('ff_sync_id', CLOUD_SYNC_ID);
+                }
+
+                updateUI();
+            }
+        })
+        .subscribe();
+}
+
 // --- App Control ---
 async function initApp() {
     console.log(`FF v${VERSION} Initializing...`);
@@ -243,6 +276,11 @@ async function initApp() {
     if (state.currentUser && supabase) {
         console.log("Global cloud refresh for:", state.currentUser);
         await refreshGlobalState();
+    }
+
+    // 2. Setup Realtime Subscription
+    if (supabase) {
+        subscribeToChanges();
     }
 
     if (!state.currentUser) {
@@ -364,7 +402,9 @@ function renderLeagueStats(l) {
 
     html += l.teams.map(t => `
         <div class="table-row">
-            <div style="font-weight: 800;">${t.name} ${t.name.toLowerCase() === state.currentUser.toLowerCase() ? '<span style="color:var(--red)">(YOU)</span>' : ''}</div>
+            <div style="font-weight: 800; color: #1a73e8; cursor: pointer;" onclick="viewTeamRoster('${t.name}')">
+                ${t.name} ${t.name.toLowerCase() === state.currentUser.toLowerCase() ? '<span style="color:var(--red)">(YOU)</span>' : ''}
+            </div>
             <div style="font-weight: 800; color: var(--red);">${t.score || 0}</div>
             <div style="font-size: 0.8rem; color: var(--gray); font-weight: 600;">${SLOTS.length - t.roster.length} UNDRAFTED</div>
         </div>
@@ -395,6 +435,51 @@ function renderDraftUI(l) {
     renderDraftOrder(l);
     renderRoster(l);
 }
+
+window.viewTeamRoster = (teamName) => {
+    const l = getActiveLeague();
+    if (!l) return;
+    const team = l.teams.find(t => t.name === teamName);
+    if (!team) return;
+
+    const rosterMap = getTeamRosterMap(team.roster);
+
+    // Create a simple overlay/modal
+    const modal = document.createElement('div');
+    modal.className = 'glass';
+    modal.style = `
+        position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        z-index: 2000; padding: 30px; border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        max-width: 400px; width: 90%; background: white;
+    `;
+
+    let rosterHtml = SLOTS.map(slot => {
+        const p = rosterMap[slot];
+        return `
+            <div style="display:flex; justify-content:between; padding: 10px; border-bottom: 1px solid #eee;">
+                <span style="font-weight: 800; opacity: 0.4; width: 60px;">${slot}</span>
+                <span style="font-weight: 700;">${p ? p.name : '<span style="opacity:0.2">—</span>'}</span>
+                <span style="margin-left: auto; font-size: 0.7rem; color: var(--gray);">${p ? p.team : ''}</span>
+            </div>
+        `;
+    }).join('');
+
+    modal.innerHTML = `
+        <div style="display:flex; justify-content:between; align-items:center; margin-bottom: 20px;">
+            <h3 style="margin:0; font-weight:800; text-transform:uppercase;">${teamName}'s Roster</h3>
+            <button onclick="this.parentElement.parentElement.remove()" class="btn-mini">Close</button>
+        </div>
+        <div>${rosterHtml}</div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Add backdrop
+    const backdrop = document.createElement('div');
+    backdrop.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1999;";
+    backdrop.onclick = () => { modal.remove(); backdrop.remove(); };
+    document.body.appendChild(backdrop);
+};
 
 function renderFilters(l) {
     const bar = document.getElementById('filter-bar');
@@ -575,6 +660,40 @@ function renderPlayerList(l) {
     `).join('') || '<div class="p-8 text-center opacity-30">NO PLAYERS MATCH FILTERS</div>';
 }
 
+function getTeamRosterMap(roster = []) {
+    const map = {};
+    SLOTS.forEach(s => map[s] = null);
+
+    const flexPositions = ['RB', 'WR', 'TE'];
+
+    // 1st Pass: Fill natural positions
+    roster.forEach(p => {
+        if (p.pos === 'QB' && !map['QB']) {
+            map['QB'] = p;
+        } else if (p.pos === 'RB') {
+            if (!map['RB1']) map['RB1'] = p;
+            else if (!map['RB2']) map['RB2'] = p;
+        } else if (p.pos === 'WR') {
+            if (!map['WR1']) map['WR1'] = p;
+            else if (!map['WR2']) map['WR2'] = p;
+        } else if (p.pos === 'TE' && !map['TE']) {
+            map['TE'] = p;
+        }
+    });
+
+    // 2nd Pass: Fill FLEX entries for remaining RB/WR/TE
+    roster.forEach(p => {
+        // Find if this specific player instance is already mapped
+        const isMapped = Object.values(map).some(m => m && m.id === p.id);
+        if (!isMapped && flexPositions.includes(p.pos)) {
+            if (!map['FLEX1']) map['FLEX1'] = p;
+            else if (!map['FLEX2']) map['FLEX2'] = p;
+        }
+    });
+
+    return map;
+}
+
 window.draftPlayer = (playerId) => {
     const l = getActiveLeague();
     const picker = l.draftOrder[l.currentPick];
@@ -582,6 +701,28 @@ window.draftPlayer = (playerId) => {
 
     const player = PLAYERS.find(p => p.id === playerId);
     const team = l.teams.find(t => t.name === picker.name);
+
+    // Position Validation Logic
+    const currentRosterMap = getTeamRosterMap(team.roster);
+    let canDraft = false;
+
+    if (player.pos === 'QB') {
+        if (!currentRosterMap['QB']) canDraft = true;
+    } else if (['RB', 'WR', 'TE'].includes(player.pos)) {
+        // Check natural slots first, then FLEX
+        const slotsToCheck = [];
+        if (player.pos === 'RB') slotsToCheck.push('RB1', 'RB2');
+        if (player.pos === 'WR') slotsToCheck.push('WR1', 'WR2');
+        if (player.pos === 'TE') slotsToCheck.push('TE');
+        slotsToCheck.push('FLEX1', 'FLEX2');
+
+        canDraft = slotsToCheck.some(s => !currentRosterMap[s]);
+    }
+
+    if (!canDraft) {
+        alert(`NO SLOTS AVAILABLE FOR ${player.name} (${player.pos})`);
+        return;
+    }
 
     team.roster.push(player);
     l.picks.push({ playerId, teamName: team.name });
@@ -618,12 +759,15 @@ function renderRoster(l) {
     const team = l.teams.find(t => t.name.toLowerCase() === state.currentUser.toLowerCase());
     if (!team) return;
 
-    c.innerHTML = SLOTS.map((slot, i) => {
-        const p = team.roster[i];
+    const rosterMap = getTeamRosterMap(team.roster);
+
+    c.innerHTML = SLOTS.map(slot => {
+        const p = rosterMap[slot];
         return `
-            <div style="padding: 6px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.65rem; margin-bottom: 4px; background: white;">
-                <span style="opacity: 0.5; font-weight: 800;">${slot}</span>: 
-                <span style="font-weight: 800;">${p ? p.name : '-'}</span>
+            <div style="padding: 6px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.65rem; margin-bottom: 4px; background: white; display: flex; justify-content: space-between;">
+                <div><span style="opacity: 0.5; font-weight: 800; width: 45px; display: inline-block;">${slot}</span>: 
+                <span style="font-weight: 800;">${p ? p.name : '-'}</span></div>
+                ${p ? `<span style="font-size:0.55rem; color:var(--gray);">${p.team}</span>` : ''}
             </div>
         `;
     }).join('');
