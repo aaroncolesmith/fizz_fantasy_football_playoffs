@@ -4,10 +4,12 @@
  */
 
 // --- Constants & Pool Data ---
-const VERSION = '2.7.2';
+const VERSION = '2.8.0';
 
 // --- ESPN API Configuration ---
 const ESPN_STATS_URL = 'https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/2025/players?view=kona_player_info';
+// IMPORTANT: Stat IDs verified from official ESPN API documentation
+// 2pt conversions are initialized to 0 and populated ONLY from ESPN API sync
 const STAT_MAP = {
     passYds: '3',
     passTD: '4',
@@ -18,9 +20,9 @@ const STAT_MAP = {
     recYds: '42',
     recTD: '43',
     fumbles: '72',
-    pass2pt: '19',
-    rush2pt: '37',
-    rec2pt: '54'
+    pass2pt: '19',  // 2pt Passing Conversion (verified)
+    rush2pt: '37',  // 2pt Rushing Conversion (verified)
+    rec2pt: '54'    // 2pt Receiving Conversion (verified)
 };
 
 const DEFAULT_SCORING = {
@@ -143,7 +145,7 @@ const PLAYERS = [
     { id: 82, name: 'Kimani Vidal', pos: 'RB', team: 'LAC', passTD: 0, rushTD: 3, recTD: 2, recs: 38 },
     { id: 83, name: 'Omarion Hampton', pos: 'RB', team: 'LAC', passTD: 0, rushTD: 4, recTD: 1, recs: 15 },
     { id: 84, name: 'Gus Edwards', pos: 'RB', team: 'LAC', passTD: 0, rushTD: 6, recTD: 0, recs: 5 },
-    { id: 85, name: 'J.K. Dobbins', pos: 'RB', team: 'LAC', passTD: 0, rushTD: 2, recTD: 0, recs: 10 },
+    // REMOVED: J.K. Dobbins LAC - duplicate, he's on DEN now (id: 3)
     { id: 86, name: 'Ladd McConkey', pos: 'WR', team: 'LAC', passTD: 0, rushTD: 0, recTD: 6, recs: 82 },
     { id: 87, name: 'Quentin Johnston', pos: 'WR', team: 'LAC', passTD: 0, rushTD: 0, recTD: 8, recs: 45 },
     // REMOVED: Joshua Palmer LAC - duplicate, he's on BUF now (id: 75)
@@ -200,7 +202,7 @@ const PLAYERS = [
     { id: 132, name: 'Tetairoa McMillan', pos: 'WR', team: 'CAR', passTD: 0, rushTD: 0, recTD: 7, recs: 78 },
     { id: 133, name: 'Xavier Legette', pos: 'WR', team: 'CAR', passTD: 0, rushTD: 0, recTD: 5, recs: 45 },
     { id: 134, name: 'Hunter Renfrow', pos: 'WR', team: 'CAR', passTD: 0, rushTD: 0, recTD: 3, recs: 52 },
-    { id: 135, name: 'Adam Thielen', pos: 'WR', team: 'CAR', passTD: 0, rushTD: 0, recTD: 2, recs: 28 },
+    // REMOVED: Adam Thielen CAR - duplicate, he's on PIT now (id: 50)
     { id: 136, name: 'Jonathan Mingo', pos: 'WR', team: 'CAR', passTD: 0, rushTD: 0, recTD: 1, recs: 22 },
     { id: 137, name: 'Tommy Tremble', pos: 'TE', team: 'CAR', passTD: 0, rushTD: 0, recTD: 3, recs: 35 },
     { id: 138, name: 'Ja\'Tavion Sanders', pos: 'TE', team: 'CAR', passTD: 0, rushTD: 0, recTD: 1, recs: 18 },
@@ -744,8 +746,11 @@ function normalizePlayers() {
     PLAYERS.forEach(p => {
         p.passYds = p.passYds || 0; p.ints = p.ints || 0;
         p.rushYds = p.rushYds || 0; p.recYds = p.recYds || 0;
-        p.fumbles = p.fumbles || 0; p.pass2pt = p.pass2pt || 0;
-        p.rush2pt = p.rush2pt || 0; p.rec2pt = p.rec2pt || 0;
+        p.fumbles = p.fumbles || 0;
+        // Initialize ALL 2pt conversions to 0 - will be populated by ESPN API sync
+        p.pass2pt = 0;
+        p.rush2pt = 0;
+        p.rec2pt = 0;
         p.fantasyPts = calculateFantasyPoints(p);
     });
 }
