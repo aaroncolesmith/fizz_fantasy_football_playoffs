@@ -4,12 +4,12 @@
  */
 
 // --- Constants & Pool Data ---
-const VERSION = '2.9.0';
+const VERSION = '2.9.1';
 
 // --- ESPN API Configuration ---
 const ESPN_STATS_URL = 'https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/2025/players?view=kona_player_info';
-// IMPORTANT: Stat IDs verified from official ESPN API documentation
-// 2pt conversions are initialized to 0 and populated ONLY from ESPN API sync
+// IMPORTANT: 2pt conversions DISABLED - ESPN API returns incorrect data
+// Stat IDs 19, 37, 54 are documented but return garbage values (e.g., AJ Brown showing 11 rec 2pt)
 const STAT_MAP = {
     passYds: '3',
     passTD: '4',
@@ -680,9 +680,13 @@ async function syncStatsFromESPN() {
                 p.recYds = parseFloat(statsObj[STAT_MAP.recYds] || 0);
                 p.recTD = parseFloat(statsObj[STAT_MAP.recTD] || 0);
                 p.fumbles = parseFloat(statsObj[STAT_MAP.fumbles] || 0);
-                p.pass2pt = parseFloat(statsObj[STAT_MAP.pass2pt] || 0);
-                p.rush2pt = parseFloat(statsObj[STAT_MAP.rush2pt] || 0);
-                p.rec2pt = parseFloat(statsObj[STAT_MAP.rec2pt] || 0);
+
+                // DISABLED: ESPN API returns incorrect 2pt conversion data
+                // The stat IDs may be documented but the actual values are wrong
+                // Forcing all 2pt conversions to 0 until verified
+                p.pass2pt = 0;  // parseFloat(statsObj[STAT_MAP.pass2pt] || 0);
+                p.rush2pt = 0;  // parseFloat(statsObj[STAT_MAP.rush2pt] || 0);
+                p.rec2pt = 0;   // parseFloat(statsObj[STAT_MAP.rec2pt] || 0);
 
                 p.fantasyPts = calculateFantasyPoints(p);
                 matches++;
