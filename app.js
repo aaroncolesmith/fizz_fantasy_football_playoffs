@@ -4,7 +4,7 @@
  */
 
 // --- Constants & Pool Data ---
-const VERSION = '2.6.2';
+const VERSION = '2.7.0';
 
 // --- ESPN API Configuration ---
 const ESPN_STATS_URL = 'https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/2025/players?view=kona_player_info';
@@ -1443,48 +1443,148 @@ function renderRoster(l) {
     });
 }
 
+// Global state for feed filter
+let feedTeamFilter = null; // null means "All Teams"
+
 function renderDraftFeed(l) {
-    const queueEl = document.getElementById('snake-order-list-feed');
-    const historyEl = document.getElementById('draft-history-list');
-    if (!queueEl || !historyEl) return;
+    const feedEl = document.getElementById('unified-draft-feed');
+    const filterMenu = document.getElementById('feed-team-filter-menu');
+    if (!feedEl || !l) return;
 
-    queueEl.innerHTML = '';
+    // Populate team filter menu
+    if (filterMenu) {
+        const teams = l.teams || [];
+        filterMenu.innerHTML = `
+            <div class="dropdown-item ${feedTeamFilter === null ? 'active' : ''}" 
+                 onclick="setFeedTeamFilter(null)">
+                All Teams
+            </div>
+            ${teams.map(t => `
+                <div class="dropdown-item ${feedTeamFilter === t.name ? 'active' : ''}" 
+                     onclick="setFeedTeamFilter('${t.name}')">
+                    ${t.name.toUpperCase()}
+                </div>
+            `).join('')}
+        `;
+    }
+
+    // Update filter display
+    const filterDisplay = document.getElementById('feed-filter-display');
+    if (filterDisplay) {
+        filterDisplay.innerText = feedTeamFilter ? feedTeamFilter.toUpperCase() : 'All Teams';
+    }
+
+    feedEl.innerHTML = '';
     const pickNum = l.currentPick || 0;
-    const upcoming = (l.draftOrder || []).slice(pickNum, pickNum + 8);
+    const totalPicks = (l.draftOrder || []).length;
+    const picks = l.picks || [];
 
-    upcoming.forEach((u, idx) => {
-        const div = document.createElement('div');
-        div.className = `feed-item ${idx === 0 ? 'active' : ''}`;
-        div.innerHTML = `
-            <div style="display:flex; justify-content:space-between; width: 100%; align-items:center;">
-                <span class="p-meta">PICK ${pickNum + idx + 1}</span>
-                <span style="font-weight:800;">${u.name.toUpperCase()} ${idx === 0 ? '🏈' : ''}</span>
-            </div>
-        `;
-        queueEl.appendChild(div);
-    });
+    // Create unified array of all draft events (past and future)
+    const allEvents = [];
 
-    historyEl.innerHTML = '';
-    const recent = [...(l.picks || [])].reverse();
-    recent.forEach(pk => {
+    // Add all past picks
+    picks.forEach((pk, idx) => {
         const p = PLAYERS.find(pp => pp.id === pk.playerId);
-        const div = document.createElement('div');
-        div.className = 'history-item';
-        div.innerHTML = `
-            <div class="pick-num">#${pk.pickNum}</div>
-            <div style="flex:1;">
-                <div class="p-name" style="font-size: 0.9rem;">${p ? p.name : 'Unknown'}</div>
-                <div class="p-meta">${p ? p.pos : ''}</div>
-            </div>
-            <div class="team-picked">${pk.owner.toUpperCase()}</div>
-        `;
-        historyEl.appendChild(div);
+        allEvents.push({
+            type: 'pick',
+            pickNum: pk.pickNum,
+            owner: pk.owner,
+            player: p,
+            timestamp: pk.timestamp || idx
+        });
     });
 
-    if (recent.length === 0) {
-        historyEl.innerHTML = '<div class="p-12 text-center opacity-30 font-bold">NO PICKS YET</div>';
+    // Add upcoming picks
+    const upcomingCount = Math.min(totalPicks - pickNum, 20); // Show next 20 picks
+    for (let i = 0; i < upcomingCount; i++) {
+        const turn = l.draftOrder[pickNum + i];
+        if (turn) {
+            allEvents.push({
+                type: 'upcoming',
+                pickNum: pickNum + i + 1,
+                owner: turn.name,
+                player: null,
+                isCurrent: i === 0
+            });
+        }
+    }
+
+    // Filter by team if selected
+    const filteredEvents = feedTeamFilter
+        ? allEvents.filter(e => e.owner.toLowerCase() === feedTeamFilter.toLowerCase())
+        : allEvents;
+
+    // Render all events
+    if (filteredEvents.length === 0) {
+        feedEl.innerHTML = '<div class="p-12 text-center opacity-30 font-bold">NO PICKS FOR THIS TEAM</div>';
+        return;
+    }
+
+    filteredEvents.forEach(event => {
+        const div = document.createElement('div');
+
+        if (event.type === 'upcoming') {
+            // Upcoming pick
+            div.className = `feed-item ${event.isCurrent ? 'active' : ''}`;
+            div.style.cssText = 'border-left: 3px solid var(--green); background: rgba(76, 217, 100, 0.05);';
+            div.innerHTML = `
+                <div style="display:flex; justify-content:space-between; width: 100%; align-items:center;">
+                    <span class="p-meta" style="font-weight: 700; color: var(--green);">PICK ${event.pickNum}</span>
+                    <span style="font-weight:800; color: var(--green);">${event.owner.toUpperCase()} ${event.isCurrent ? '🏈' : ''}</span>
+                </div>
+            `;
+        } else {
+            // Past pick
+            div.className = 'history-item';
+            div.innerHTML = `
+                <div class="pick-num" style="background: var(--gray); color: white;">#${event.pickNum}</div>
+                <div style="flex:1;">
+                    <div class="p-name" style="font-size: 0.9rem;">${event.player ? event.player.name : 'Unknown'}</div>
+                    <div class="p-meta">${event.player ? event.player.pos : ''} ${event.player ? '• ' + event.player.team : ''}</div>
+                </div>
+                <div class="team-picked">${event.owner.toUpperCase()}</div>
+            `;
+        }
+
+        feedEl.appendChild(div);
+    });
+
+    // Auto-scroll to current pick on initial load
+    if (!feedTeamFilter && pickNum > 0) {
+        const currentPickEl = feedEl.querySelector('.feed-item.active');
+        if (currentPickEl) {
+            setTimeout(() => {
+                currentPickEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 100);
+        }
     }
 }
+
+window.toggleFeedTeamFilter = function (event) {
+    event.stopPropagation();
+    const menu = document.getElementById('feed-team-filter-menu');
+    if (menu) {
+        menu.classList.toggle('hidden');
+    }
+};
+
+window.setFeedTeamFilter = function (teamName) {
+    feedTeamFilter = teamName;
+    const menu = document.getElementById('feed-team-filter-menu');
+    if (menu) menu.classList.add('hidden');
+
+    const l = getActiveLeague();
+    if (l) renderDraftFeed(l);
+};
+
+// Close feed filter when clicking outside
+document.addEventListener('click', () => {
+    const menu = document.getElementById('feed-team-filter-menu');
+    if (menu && !menu.classList.contains('hidden')) {
+        menu.classList.add('hidden');
+    }
+});
+
 
 // --- Event Handlers ---
 function setupListeners() {

@@ -168,14 +168,28 @@
 
                 <!-- Tab Content: Feed -->
                 <div id="tab-content-feed" class="tab-content hidden">
-                    <div class="draft-feed-layout">
-                        <div class="card glass">
-                            <h3 class="font-bold mb-4">NEXT UP</h3>
-                            <div id="snake-order-list-feed" class="feed-queue-list"></div>
+                    <div class="card glass">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <h3 class="font-bold" style="margin: 0;">DRAFT FEED</h3>
+                            <div class="filter-dropdown-container" id="feed-team-filter-dropdown">
+                                <div class="dropdown-trigger" onclick="toggleFeedTeamFilter(event)"
+                                    style="padding: 8px 16px; cursor: pointer;">
+                                    <div style="display:flex; flex-direction:column;">
+                                        <span
+                                            style="font-size:0.55rem; color:var(--gray); text-transform:uppercase;">FILTER</span>
+                                        <span id="feed-filter-display">All Teams</span>
+                                    </div>
+                                </div>
+                                <div id="feed-team-filter-menu" class="dropdown-menu hidden"
+                                    onclick="event.stopPropagation()">
+                                    <!-- Populated by JS -->
+                                </div>
+                            </div>
                         </div>
-                        <div class="card glass mt-4">
-                            <h3 class="font-bold mb-4">RECENT PICKS</h3>
-                            <div id="draft-history-list" class="history-list"></div>
+                        <div id="unified-draft-feed" class="unified-feed-list"
+                            style="max-height: 600px; overflow-y: auto; padding-right: 8px;">
+                            <!-- Unified feed items injected here -->
                         </div>
                     </div>
                 </div>
