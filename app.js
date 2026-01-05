@@ -4,7 +4,7 @@
  */
 
 // --- Constants & Pool Data ---
-const VERSION = '2.5.2';
+const VERSION = '2.6.0';
 
 // --- ESPN API Configuration ---
 const ESPN_STATS_URL = 'https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/2025/players?view=kona_player_info';
@@ -715,6 +715,31 @@ function calculateFantasyPoints(p) {
     return parseFloat(pts.toFixed(2));
 }
 
+function getPointsBreakdown(p) {
+    const l = getActiveLeague();
+    const s = l?.scoring || DEFAULT_SCORING;
+    const lines = [];
+
+    const check = (val, mult, label) => {
+        if (val) lines.push(`${label}: ${val} * ${mult} = ${(val * mult).toFixed(2)}`);
+    };
+
+    check(p.passYds, s.passYds, "Pass Yds");
+    check(p.passTD, s.passTD, "Pass TDs");
+    check(p.ints, s.ints, "Ints");
+    check(p.rushYds, s.rushYds, "Rush Yds");
+    check(p.rushTD, s.rushTD, "Rush TDs");
+    check(p.recs, s.recs, "Recs");
+    check(p.recYds, s.recYds, "Rec Yds");
+    check(p.recTD, s.recTD, "Rec TDs");
+    check(p.fumbles, s.fumbles, "Fumbles");
+    check(p.pass2pt, s.pass2pt, "Pass 2pt");
+    check(p.rush2pt, s.rush2pt, "Rush 2pt");
+    check(p.rec2pt, s.rec2pt, "Rec 2pt");
+
+    return lines.length ? lines.join('\n') : "No points scored";
+}
+
 function normalizePlayers() {
     PLAYERS.forEach(p => {
         p.passYds = p.passYds || 0; p.ints = p.ints || 0;
@@ -1258,7 +1283,9 @@ function renderPlayerList(l) {
             <td style="white-space:nowrap;"><div class="p-name">${p.name}</div></td>
             <td style="text-align:center; font-weight:800; color:var(--gray); padding: 0 10px;">${p.team}</td>
             <td style="text-align:center; font-weight:800; color:var(--gray); padding: 0 10px;">${p.pos}</td>
-            <td class="stat-cell ${state.statTab === 'fantasyPts' ? 'active' : ''}" style="text-align:center; padding: 0 10px; color: var(--red); font-weight:bold;">${p.fantasyPts || 0}</td>
+            <td class="stat-cell ${state.statTab === 'fantasyPts' ? 'active' : ''}" 
+                style="text-align:center; padding: 0 10px; color: var(--red); font-weight:bold; cursor:help;"
+                title="${getPointsBreakdown(p)}">${p.fantasyPts || 0}</td>
             <td class="stat-cell ${state.statTab === 'passYds' ? 'active' : ''}" style="text-align:center; padding: 0 10px;">${Math.round(p.passYds || 0)}</td>
             <td class="stat-cell ${state.statTab === 'passTD' ? 'active' : ''}" style="text-align:center; padding: 0 10px;">${p.passTD || 0}</td>
             <td class="stat-cell ${state.statTab === 'rushYds' ? 'active' : ''}" style="text-align:center; padding: 0 10px;">${Math.round(p.rushYds || 0)}</td>
