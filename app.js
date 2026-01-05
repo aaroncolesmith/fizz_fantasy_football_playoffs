@@ -4,7 +4,39 @@
  */
 
 // --- Constants & Pool Data ---
-const VERSION = '1.9.0';
+const VERSION = '2.5.1';
+
+// --- ESPN API Configuration ---
+const ESPN_STATS_URL = 'https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/2025/players?view=kona_player_info';
+const STAT_MAP = {
+    passYds: '3',
+    passTD: '4',
+    ints: '20',
+    rushYds: '24',
+    rushTD: '25',
+    recs: '53',
+    recYds: '42',
+    recTD: '43',
+    fumbles: '72',
+    pass2pt: '19',
+    rush2pt: '37',
+    rec2pt: '54'
+};
+
+const DEFAULT_SCORING = {
+    passYds: 0.04,
+    rushYds: 0.1,
+    recYds: 0.1,
+    passTD: 4,
+    rushTD: 6,
+    recTD: 6,
+    recs: 1,
+    pass2pt: 2,
+    rush2pt: 2,
+    rec2pt: 2,
+    ints: -2,
+    fumbles: -2
+};
 
 // Initialize Supabase (Using standard CDN global)
 const SUPABASE_URL = 'https://rchbzcfhnhshbvtjtfay.supabase.co';
@@ -15,208 +47,207 @@ const supabase = (window.supabase) ? window.supabase.createClient(SUPABASE_URL, 
 let CLOUD_SYNC_ID = localStorage.getItem('ff_sync_id') || null;
 const PLAYERS = [
     // AFC #1 - Denver Broncos (DEN)
-    { id: 1, name: 'Bo Nix', pos: 'QB', team: 'DEN' },
-    { id: 2, name: 'Jarrett Stidham', pos: 'QB', team: 'DEN' },
-    { id: 3, name: 'J.K. Dobbins', pos: 'RB', team: 'DEN' },
-    { id: 4, name: 'RJ Harvey', pos: 'RB', team: 'DEN' },
-    { id: 5, name: 'Audric Estime', pos: 'RB', team: 'DEN' },
-    { id: 6, name: 'Tyler Badie', pos: 'RB', team: 'DEN' },
-    { id: 7, name: 'Courtland Sutton', pos: 'WR', team: 'DEN' },
-    { id: 8, name: 'Marvin Mims Jr.', pos: 'WR', team: 'DEN' },
-    { id: 9, name: 'Troy Franklin', pos: 'WR', team: 'DEN' },
-    { id: 10, name: 'Lil\'Jordan Humphrey', pos: 'WR', team: 'DEN' },
-    { id: 11, name: 'Devaughn Vele', pos: 'WR', team: 'DEN' },
-    { id: 12, name: 'Josh Reynolds', pos: 'WR', team: 'DEN' },
-    { id: 13, name: 'Evan Engram', pos: 'TE', team: 'DEN' },
-    { id: 14, name: 'Adam Trautman', pos: 'TE', team: 'DEN' },
-    { id: 15, name: 'Greg Dulcich', pos: 'TE', team: 'DEN' },
+    { id: 1, name: 'Bo Nix', pos: 'QB', team: 'DEN', passTD: 25, rushTD: 4, recTD: 0, recs: 0 },
+    { id: 2, name: 'Jarrett Stidham', pos: 'QB', team: 'DEN', passTD: 2, rushTD: 0, recTD: 0, recs: 0 },
+    { id: 3, name: 'J.K. Dobbins', pos: 'RB', team: 'DEN', passTD: 0, rushTD: 8, recTD: 1, recs: 32 },
+    { id: 4, name: 'RJ Harvey', pos: 'RB', team: 'DEN', passTD: 0, rushTD: 7, recTD: 0, recs: 12 },
+    { id: 5, name: 'Audric Estime', pos: 'RB', team: 'DEN', passTD: 0, rushTD: 2, recTD: 0, recs: 5 },
+    { id: 6, name: 'Tyler Badie', pos: 'RB', team: 'DEN', passTD: 0, rushTD: 1, recTD: 0, recs: 8 },
+    { id: 7, name: 'Courtland Sutton', pos: 'WR', team: 'DEN', passTD: 0, rushTD: 0, recTD: 7, recs: 72 },
+    { id: 8, name: 'Marvin Mims Jr.', pos: 'WR', team: 'DEN', passTD: 0, rushTD: 1, recTD: 3, recs: 48 },
+    { id: 9, name: 'Troy Franklin', pos: 'WR', team: 'DEN', passTD: 0, rushTD: 0, recTD: 2, recs: 35 },
+    { id: 10, name: 'Lil\'Jordan Humphrey', pos: 'WR', team: 'DEN', passTD: 0, rushTD: 0, recTD: 1, recs: 22 },
+    { id: 11, name: 'Devaughn Vele', pos: 'WR', team: 'DEN', passTD: 0, rushTD: 0, recTD: 0, recs: 18 },
+    { id: 12, name: 'Josh Reynolds', pos: 'WR', team: 'DEN', passTD: 0, rushTD: 0, recTD: 1, recs: 15 },
+    { id: 13, name: 'Evan Engram', pos: 'TE', team: 'DEN', passTD: 0, rushTD: 0, recTD: 5, recs: 88 },
+    { id: 14, name: 'Adam Trautman', pos: 'TE', team: 'DEN', passTD: 0, rushTD: 0, recTD: 2, recs: 25 },
+    { id: 15, name: 'Greg Dulcich', pos: 'TE', team: 'DEN', passTD: 0, rushTD: 0, recTD: 1, recs: 12 },
 
     // AFC #2 - New England Patriots (NE)
-    { id: 16, name: 'Drake Maye', pos: 'QB', team: 'NE' },
-    { id: 17, name: 'Joshua Dobbs', pos: 'QB', team: 'NE' },
-    { id: 18, name: 'Rhamondre Stevenson', pos: 'RB', team: 'NE' },
-    { id: 19, name: 'TreVeyon Henderson', pos: 'RB', team: 'NE' },
-    { id: 20, name: 'Antonio Gibson', pos: 'RB', team: 'NE' },
-    { id: 21, name: 'JaMycal Hasty', pos: 'RB', team: 'NE' },
-    { id: 22, name: 'Stefon Diggs', pos: 'WR', team: 'NE' },
-    { id: 23, name: 'DeMario Douglas', pos: 'WR', team: 'NE' },
-    { id: 24, name: 'Ja\'Lynn Polk', pos: 'WR', team: 'NE' },
-    { id: 25, name: 'Kendrick Bourne', pos: 'WR', team: 'NE' },
-    { id: 26, name: 'Javon Baker', pos: 'WR', team: 'NE' },
-    { id: 27, name: 'Kayshon Boutte', pos: 'WR', team: 'NE' },
-    { id: 28, name: 'Hunter Henry', pos: 'TE', team: 'NE' },
-    { id: 29, name: 'Austin Hooper', pos: 'TE', team: 'NE' },
+    { id: 16, name: 'Drake Maye', pos: 'QB', team: 'NE', passTD: 28, rushTD: 6, recTD: 0, recs: 0 },
+    { id: 17, name: 'Joshua Dobbs', pos: 'QB', team: 'NE', passTD: 3, rushTD: 2, recTD: 0, recs: 0 },
+    { id: 18, name: 'Rhamondre Stevenson', pos: 'RB', team: 'NE', passTD: 0, rushTD: 9, recTD: 2, recs: 45 },
+    { id: 19, name: 'TreVeyon Henderson', pos: 'RB', team: 'NE', passTD: 0, rushTD: 11, recTD: 1, recs: 28 },
+    { id: 20, name: 'Antonio Gibson', pos: 'RB', team: 'NE', passTD: 0, rushTD: 3, recTD: 1, recs: 35 },
+    { id: 21, name: 'JaMycal Hasty', pos: 'RB', team: 'NE', passTD: 0, rushTD: 1, recTD: 0, recs: 12 },
+    { id: 22, name: 'Stefon Diggs', pos: 'WR', team: 'NE', passTD: 0, rushTD: 0, recTD: 8, recs: 92 },
+    { id: 23, name: 'DeMario Douglas', pos: 'WR', team: 'NE', passTD: 0, rushTD: 0, recTD: 4, recs: 68 },
+    { id: 24, name: 'Ja\'Lynn Polk', pos: 'WR', team: 'NE', passTD: 0, rushTD: 0, recTD: 3, recs: 42 },
+    { id: 25, name: 'Kendrick Bourne', pos: 'WR', team: 'NE', passTD: 0, rushTD: 0, recTD: 2, recs: 30 },
+    { id: 26, name: 'Javon Baker', pos: 'WR', team: 'NE', passTD: 0, rushTD: 0, recTD: 1, recs: 15 },
+    { id: 27, name: 'Kayshon Boutte', pos: 'WR', team: 'NE', passTD: 0, rushTD: 0, recTD: 1, recs: 12 },
+    { id: 28, name: 'Hunter Henry', pos: 'TE', team: 'NE', passTD: 0, rushTD: 0, recTD: 6, recs: 58 },
+    { id: 29, name: 'Austin Hooper', pos: 'TE', team: 'NE', passTD: 0, rushTD: 0, recTD: 2, recs: 22 },
 
     // AFC #3 - Jacksonville Jaguars (JAX)
-    { id: 30, name: 'Trevor Lawrence', pos: 'QB', team: 'JAX' },
-    { id: 31, name: 'Mac Jones', pos: 'QB', team: 'JAX' },
-    { id: 32, name: 'Travis Etienne Jr.', pos: 'RB', team: 'JAX' },
-    { id: 33, name: 'Tank Bigsby', pos: 'RB', team: 'JAX' },
-    { id: 34, name: 'D\'Ernest Johnson', pos: 'RB', team: 'JAX' },
-    { id: 35, name: 'Brian Thomas Jr.', pos: 'WR', team: 'JAX' },
-    { id: 36, name: 'Christian Kirk', pos: 'WR', team: 'JAX' },
-    { id: 37, name: 'Gabe Davis', pos: 'WR', team: 'JAX' },
-    { id: 38, name: 'Parker Washington', pos: 'WR', team: 'JAX' },
-    { id: 39, name: 'Jakobi Meyers', pos: 'WR', team: 'JAX' },
-    { id: 40, name: 'Brenton Strange', pos: 'TE', team: 'JAX' },
-    { id: 41, name: 'Luke Farrell', pos: 'TE', team: 'JAX' },
+    { id: 30, name: 'Trevor Lawrence', pos: 'QB', team: 'JAX', passTD: 26, rushTD: 9, recTD: 0, recs: 0 },
+    { id: 31, name: 'Mac Jones', pos: 'QB', team: 'JAX', passTD: 1, rushTD: 0, recTD: 0, recs: 0 },
+    { id: 32, name: 'Travis Etienne Jr.', pos: 'RB', team: 'JAX', passTD: 0, rushTD: 7, recTD: 3, recs: 52 },
+    { id: 33, name: 'Tank Bigsby', pos: 'RB', team: 'JAX', passTD: 0, rushTD: 4, recTD: 0, recs: 8 },
+    { id: 34, name: 'D\'Ernest Johnson', pos: 'RB', team: 'JAX', passTD: 0, rushTD: 1, recTD: 1, recs: 15 },
+    { id: 35, name: 'Brian Thomas Jr.', pos: 'WR', team: 'JAX', passTD: 0, rushTD: 0, recTD: 9, recs: 65 },
+    { id: 36, name: 'Christian Kirk', pos: 'WR', team: 'JAX', passTD: 0, rushTD: 0, recTD: 5, recs: 78 },
+    { id: 37, name: 'Gabe Davis', pos: 'WR', team: 'JAX', passTD: 0, rushTD: 0, recTD: 6, recs: 48 },
+    { id: 38, name: 'Parker Washington', pos: 'WR', team: 'JAX', passTD: 0, rushTD: 0, recTD: 4, recs: 55 },
+    { id: 39, name: 'Jakobi Meyers', pos: 'WR', team: 'JAX', passTD: 0, rushTD: 0, recTD: 5, recs: 62 },
+    { id: 40, name: 'Brenton Strange', pos: 'TE', team: 'JAX', passTD: 0, rushTD: 0, recTD: 3, recs: 32 },
+    { id: 41, name: 'Luke Farrell', pos: 'TE', team: 'JAX', passTD: 0, rushTD: 0, recTD: 1, recs: 12 },
 
     // AFC #4 - Pittsburgh Steelers (PIT)
-    { id: 42, name: 'Aaron Rodgers', pos: 'QB', team: 'PIT' },
-    { id: 43, name: 'Justin Fields', pos: 'QB', team: 'PIT' },
-    { id: 44, name: 'Jaylen Warren', pos: 'RB', team: 'PIT' },
-    { id: 45, name: 'Najee Harris', pos: 'RB', team: 'PIT' },
-    { id: 46, name: 'Kenneth Gainwell', pos: 'RB', team: 'PIT' },
-    { id: 47, name: 'Cordarrelle Patterson', pos: 'RB', team: 'PIT' },
-    { id: 48, name: 'DK Metcalf', pos: 'WR', team: 'PIT' },
-    { id: 49, name: 'George Pickens', pos: 'WR', team: 'PIT' },
-    { id: 50, name: 'Adam Thielen', pos: 'WR', team: 'PIT' },
-    { id: 51, name: 'Van Jefferson', pos: 'WR', team: 'PIT' },
-    { id: 52, name: 'Calvin Austin III', pos: 'WR', team: 'PIT' },
-    { id: 53, name: 'Pat Freiermuth', pos: 'TE', team: 'PIT' },
-    { id: 54, name: 'Darnell Washington', pos: 'TE', team: 'PIT' },
-    { id: 55, name: 'Connor Heyward', pos: 'TE', team: 'PIT' },
+    { id: 42, name: 'Aaron Rodgers', pos: 'QB', team: 'PIT', passTD: 23, rushTD: 1, recTD: 0, recs: 0 },
+    { id: 43, name: 'Justin Fields', pos: 'QB', team: 'PIT', passTD: 5, rushTD: 8, recTD: 0, recs: 0 },
+    { id: 44, name: 'Jaylen Warren', pos: 'RB', team: 'PIT', passTD: 0, rushTD: 6, recTD: 3, recs: 64 },
+    { id: 45, name: 'Najee Harris', pos: 'RB', team: 'PIT', passTD: 0, rushTD: 8, recTD: 1, recs: 32 },
+    { id: 46, name: 'Kenneth Gainwell', pos: 'RB', team: 'PIT', passTD: 0, rushTD: 4, recTD: 3, recs: 48 },
+    { id: 47, name: 'Cordarrelle Patterson', pos: 'RB', team: 'PIT', passTD: 0, rushTD: 2, recTD: 1, recs: 15 },
+    { id: 48, name: 'DK Metcalf', pos: 'WR', team: 'PIT', passTD: 0, rushTD: 0, recTD: 6, recs: 72 },
+    { id: 49, name: 'George Pickens', pos: 'WR', team: 'PIT', passTD: 0, rushTD: 0, recTD: 5, recs: 65 },
+    { id: 50, name: 'Adam Thielen', pos: 'WR', team: 'PIT', passTD: 0, rushTD: 0, recTD: 4, recs: 58 },
+    { id: 51, name: 'Van Jefferson', pos: 'WR', team: 'PIT', passTD: 0, rushTD: 0, recTD: 2, recs: 25 },
+    { id: 52, name: 'Calvin Austin III', pos: 'WR', team: 'PIT', passTD: 0, rushTD: 0, recTD: 2, recs: 22 },
+    { id: 53, name: 'Pat Freiermuth', pos: 'TE', team: 'PIT', passTD: 0, rushTD: 0, recTD: 4, recs: 55 },
+    { id: 54, name: 'Darnell Washington', pos: 'TE', team: 'PIT', passTD: 0, rushTD: 0, recTD: 1, recs: 18 },
+    { id: 55, name: 'Connor Heyward', pos: 'TE', team: 'PIT', passTD: 0, rushTD: 0, recTD: 1, recs: 15 },
 
     // AFC #5 - Houston Texans (HOU)
-    { id: 56, name: 'C.J. Stroud', pos: 'QB', team: 'HOU' },
-    { id: 57, name: 'Davis Mills', pos: 'QB', team: 'HOU' },
-    { id: 58, name: 'Joe Mixon', pos: 'RB', team: 'HOU' },
-    { id: 59, name: 'Woody Marks', pos: 'RB', team: 'HOU' },
-    { id: 60, name: 'Dameon Pierce', pos: 'RB', team: 'HOU' },
-    { id: 61, name: 'Nico Collins', pos: 'WR', team: 'HOU' },
-    { id: 62, name: 'Tank Dell', pos: 'WR', team: 'HOU' },
-    { id: 63, name: 'Stefon Diggs', pos: 'WR', team: 'HOU' },
-    { id: 64, name: 'John Metchie III', pos: 'WR', team: 'HOU' },
-    { id: 65, name: 'Xavier Hutchinson', pos: 'WR', team: 'HOU' },
-    { id: 66, name: 'Dalton Schultz', pos: 'TE', team: 'HOU' },
-    { id: 67, name: 'Brevin Jordan', pos: 'TE', team: 'HOU' },
+    { id: 56, name: 'C.J. Stroud', pos: 'QB', team: 'HOU', passTD: 28, rushTD: 2, recTD: 0, recs: 0 },
+    { id: 57, name: 'Davis Mills', pos: 'QB', team: 'HOU', passTD: 1, rushTD: 0, recTD: 0, recs: 0 },
+    { id: 58, name: 'Joe Mixon', pos: 'RB', team: 'HOU', passTD: 0, rushTD: 10, recTD: 2, recs: 42 },
+    { id: 59, name: 'Woody Marks', pos: 'RB', team: 'HOU', passTD: 0, rushTD: 6, recTD: 1, recs: 25 },
+    { id: 60, name: 'Dameon Pierce', pos: 'RB', team: 'HOU', passTD: 0, rushTD: 3, recTD: 0, recs: 12 },
+    { id: 61, name: 'Nico Collins', pos: 'WR', team: 'HOU', passTD: 0, rushTD: 0, recTD: 6, recs: 88 },
+    { id: 62, name: 'Tank Dell', pos: 'WR', team: 'HOU', passTD: 0, rushTD: 1, recTD: 5, recs: 62 },
+    { id: 63, name: 'Stefon Diggs', pos: 'WR', team: 'HOU', passTD: 0, rushTD: 0, recTD: 7, recs: 95 },
+    { id: 64, name: 'John Metchie III', pos: 'WR', team: 'HOU', passTD: 0, rushTD: 0, recTD: 2, recs: 32 },
+    { id: 65, name: 'Xavier Hutchinson', pos: 'WR', team: 'HOU', passTD: 0, rushTD: 0, recTD: 1, recs: 22 },
+    { id: 66, name: 'Dalton Schultz', pos: 'TE', team: 'HOU', passTD: 0, rushTD: 0, recTD: 4, recs: 58 },
+    { id: 67, name: 'Brevin Jordan', pos: 'TE', team: 'HOU', passTD: 0, rushTD: 0, recTD: 2, recs: 18 },
 
     // AFC #6 - Buffalo Bills (BUF)
-    { id: 68, name: 'Josh Allen', pos: 'QB', team: 'BUF' },
-    { id: 69, name: 'Mitchell Trubisky', pos: 'QB', team: 'BUF' },
-    { id: 70, name: 'James Cook', pos: 'RB', team: 'BUF' },
-    { id: 71, name: 'Ray Davis', pos: 'RB', team: 'BUF' },
-    { id: 72, name: 'Ty Johnson', pos: 'RB', team: 'BUF' },
-    { id: 73, name: 'Khalil Shakir', pos: 'WR', team: 'BUF' },
-    { id: 74, name: 'Keon Coleman', pos: 'WR', team: 'BUF' },
-    { id: 75, name: 'Joshua Palmer', pos: 'WR', team: 'BUF' },
-    { id: 76, name: 'Mack Hollins', pos: 'WR', team: 'BUF' },
-    { id: 77, name: 'Curtis Samuel', pos: 'WR', team: 'BUF' },
-    { id: 78, name: 'Dalton Kincaid', pos: 'TE', team: 'BUF' },
-    { id: 79, name: 'Dawson Knox', pos: 'TE', team: 'BUF' },
+    { id: 68, name: 'Josh Allen', pos: 'QB', team: 'BUF', passTD: 25, rushTD: 14, recTD: 0, recs: 0 },
+    { id: 69, name: 'Mitchell Trubisky', pos: 'QB', team: 'BUF', passTD: 1, rushTD: 1, recTD: 0, recs: 0 },
+    { id: 70, name: 'James Cook', pos: 'RB', team: 'BUF', passTD: 0, rushTD: 12, recTD: 4, recs: 58 },
+    { id: 71, name: 'Ray Davis', pos: 'RB', team: 'BUF', passTD: 0, rushTD: 5, recTD: 1, recs: 15 },
+    { id: 72, name: 'Ty Johnson', pos: 'RB', team: 'BUF', passTD: 0, rushTD: 2, recTD: 1, recs: 12 },
+    { id: 73, name: 'Khalil Shakir', pos: 'WR', team: 'BUF', passTD: 0, rushTD: 0, recTD: 4, recs: 75 },
+    { id: 74, name: 'Keon Coleman', pos: 'WR', team: 'BUF', passTD: 0, rushTD: 0, recTD: 6, recs: 52 },
+    { id: 75, name: 'Joshua Palmer', pos: 'WR', team: 'BUF', passTD: 0, rushTD: 0, recTD: 3, recs: 48 },
+    { id: 76, name: 'Mack Hollins', pos: 'WR', team: 'BUF', passTD: 0, rushTD: 0, recTD: 2, recs: 18 },
+    { id: 77, name: 'Curtis Samuel', pos: 'WR', team: 'BUF', passTD: 0, rushTD: 1, recTD: 2, recs: 35 },
+    { id: 78, name: 'Dalton Kincaid', pos: 'TE', team: 'BUF', passTD: 0, rushTD: 0, recTD: 5, recs: 72 },
+    { id: 79, name: 'Dawson Knox', pos: 'TE', team: 'BUF', passTD: 0, rushTD: 0, recTD: 3, recs: 28 },
 
     // AFC #7 - Los Angeles Chargers (LAC)
-    { id: 80, name: 'Justin Herbert', pos: 'QB', team: 'LAC' },
-    { id: 81, name: 'Easton Stick', pos: 'QB', team: 'LAC' },
-    { id: 82, name: 'Kimani Vidal', pos: 'RB', team: 'LAC' },
-    { id: 83, name: 'Omarion Hampton', pos: 'RB', team: 'LAC' },
-    { id: 84, name: 'Gus Edwards', pos: 'RB', team: 'LAC' },
-    { id: 85, name: 'J.K. Dobbins', pos: 'RB', team: 'LAC' },
-    { id: 86, name: 'Ladd McConkey', pos: 'WR', team: 'LAC' },
-    { id: 87, name: 'Quentin Johnston', pos: 'WR', team: 'LAC' },
-    { id: 88, name: 'Joshua Palmer', pos: 'WR', team: 'LAC' },
-    { id: 89, name: 'Derius Davis', pos: 'WR', team: 'LAC' },
-    { id: 90, name: 'Oronde Gadsden', pos: 'TE', team: 'LAC' },
-    { id: 91, name: 'Will Dissly', pos: 'TE', team: 'LAC' },
-    { id: 92, name: 'Hayden Hurst', pos: 'TE', team: 'LAC' },
+    { id: 80, name: 'Justin Herbert', pos: 'QB', team: 'LAC', passTD: 26, rushTD: 3, recTD: 0, recs: 0 },
+    { id: 81, name: 'Easton Stick', pos: 'QB', team: 'LAC', passTD: 0, rushTD: 1, recTD: 0, recs: 0 },
+    { id: 82, name: 'Kimani Vidal', pos: 'RB', team: 'LAC', passTD: 0, rushTD: 3, recTD: 2, recs: 38 },
+    { id: 83, name: 'Omarion Hampton', pos: 'RB', team: 'LAC', passTD: 0, rushTD: 4, recTD: 1, recs: 15 },
+    { id: 84, name: 'Gus Edwards', pos: 'RB', team: 'LAC', passTD: 0, rushTD: 6, recTD: 0, recs: 5 },
+    { id: 85, name: 'J.K. Dobbins', pos: 'RB', team: 'LAC', passTD: 0, rushTD: 2, recTD: 0, recs: 10 },
+    { id: 86, name: 'Ladd McConkey', pos: 'WR', team: 'LAC', passTD: 0, rushTD: 0, recTD: 6, recs: 82 },
+    { id: 87, name: 'Quentin Johnston', pos: 'WR', team: 'LAC', passTD: 0, rushTD: 0, recTD: 8, recs: 45 },
+    { id: 88, name: 'Joshua Palmer', pos: 'WR', team: 'LAC', passTD: 0, rushTD: 0, recTD: 2, recs: 42 },
+    { id: 89, name: 'Derius Davis', pos: 'WR', team: 'LAC', passTD: 0, rushTD: 1, recTD: 1, recs: 25 },
+    { id: 90, name: 'Oronde Gadsden', pos: 'TE', team: 'LAC', passTD: 0, rushTD: 0, recTD: 4, recs: 52 },
+    { id: 91, name: 'Will Dissly', pos: 'TE', team: 'LAC', passTD: 0, rushTD: 0, recTD: 1, recs: 18 },
+    { id: 92, name: 'Hayden Hurst', pos: 'TE', team: 'LAC', passTD: 0, rushTD: 0, recTD: 1, recs: 12 },
 
     // NFC #1 - Seattle Seahawks (SEA)
-    { id: 93, name: 'Sam Darnold', pos: 'QB', team: 'SEA' },
-    { id: 94, name: 'Jalen Milroe', pos: 'QB', team: 'SEA' },
-    { id: 95, name: 'Kenneth Walker III', pos: 'RB', team: 'SEA' },
-    { id: 96, name: 'Zach Charbonnet', pos: 'RB', team: 'SEA' },
-    { id: 97, name: 'Kenny McIntosh', pos: 'RB', team: 'SEA' },
-    { id: 98, name: 'Jaxon Smith-Njigba', pos: 'WR', team: 'SEA' },
-    { id: 99, name: 'Cooper Kupp', pos: 'WR', team: 'SEA' },
-    { id: 100, name: 'Tyler Lockett', pos: 'WR', team: 'SEA' },
-    { id: 101, name: 'Jake Bobo', pos: 'WR', team: 'SEA' },
-    { id: 102, name: 'Dareke Young', pos: 'WR', team: 'SEA' },
-    { id: 103, name: 'Noah Fant', pos: 'TE', team: 'SEA' },
-    { id: 104, name: 'AJ Barner', pos: 'TE', team: 'SEA' },
+    { id: 93, name: 'Sam Darnold', pos: 'QB', team: 'SEA', passTD: 35, rushTD: 4, recTD: 0, recs: 0 },
+    { id: 94, name: 'Jalen Milroe', pos: 'QB', team: 'SEA', passTD: 2, rushTD: 5, recTD: 0, recs: 0 },
+    { id: 95, name: 'Kenneth Walker III', pos: 'RB', team: 'SEA', passTD: 0, rushTD: 11, recTD: 2, recs: 38 },
+    { id: 96, name: 'Zach Charbonnet', pos: 'RB', team: 'SEA', passTD: 0, rushTD: 6, recTD: 1, recs: 32 },
+    { id: 97, name: 'Kenny McIntosh', pos: 'RB', team: 'SEA', passTD: 0, rushTD: 1, recTD: 0, recs: 8 },
+    { id: 98, name: 'Jaxon Smith-Njigba', pos: 'WR', team: 'SEA', passTD: 0, rushTD: 0, recTD: 10, recs: 119 },
+    { id: 101, name: 'Cooper Kupp', pos: 'WR', team: 'SEA', passTD: 0, rushTD: 0, recTD: 8, recs: 88 },
+    { id: 100, name: 'Tyler Lockett', pos: 'WR', team: 'SEA', passTD: 0, rushTD: 0, recTD: 5, recs: 62 },
+    { id: 102, name: 'Jake Bobo', pos: 'WR', team: 'SEA', passTD: 0, rushTD: 0, recTD: 2, recs: 25 },
+    { id: 103, name: 'Noah Fant', pos: 'TE', team: 'SEA', passTD: 0, rushTD: 0, recTD: 4, recs: 52 },
+    { id: 104, name: 'AJ Barner', pos: 'TE', team: 'SEA', passTD: 0, rushTD: 0, recTD: 1, recs: 15 },
 
     // NFC #2 - Chicago Bears (CHI)
-    { id: 105, name: 'Caleb Williams', pos: 'QB', team: 'CHI' },
-    { id: 106, name: 'Tyson Bagent', pos: 'QB', team: 'CHI' },
-    { id: 107, name: 'D\'Andre Swift', pos: 'RB', team: 'CHI' },
-    { id: 108, name: 'Roschon Johnson', pos: 'RB', team: 'CHI' },
-    { id: 109, name: 'Khalil Herbert', pos: 'RB', team: 'CHI' },
-    { id: 110, name: 'D.J. Moore', pos: 'WR', team: 'CHI' },
-    { id: 111, name: 'Rome Odunze', pos: 'WR', team: 'CHI' },
-    { id: 112, name: 'Keenan Allen', pos: 'WR', team: 'CHI' },
-    { id: 113, name: 'Tyler Scott', pos: 'WR', team: 'CHI' },
-    { id: 114, name: 'Velus Jones Jr.', pos: 'WR', team: 'CHI' },
-    { id: 115, name: 'Cole Kmet', pos: 'TE', team: 'CHI' },
-    { id: 116, name: 'Gerald Everett', pos: 'TE', team: 'CHI' },
+    { id: 105, name: 'Caleb Williams', pos: 'QB', team: 'CHI', passTD: 25, rushTD: 6, recTD: 0, recs: 0 },
+    { id: 106, name: 'Tyson Bagent', pos: 'QB', team: 'CHI', passTD: 1, rushTD: 1, recTD: 0, recs: 0 },
+    { id: 107, name: 'D\'Andre Swift', pos: 'RB', team: 'CHI', passTD: 0, rushTD: 9, recTD: 3, recs: 62 },
+    { id: 108, name: 'Roschon Johnson', pos: 'RB', team: 'CHI', passTD: 0, rushTD: 4, recTD: 0, recs: 18 },
+    { id: 109, name: 'Khalil Herbert', pos: 'RB', team: 'CHI', passTD: 0, rushTD: 2, recTD: 0, recs: 12 },
+    { id: 110, name: 'D.J. Moore', pos: 'WR', team: 'CHI', passTD: 0, rushTD: 0, recTD: 8, recs: 85 },
+    { id: 111, name: 'Rome Odunze', pos: 'WR', team: 'CHI', passTD: 0, rushTD: 0, recTD: 6, recs: 58 },
+    { id: 112, name: 'Keenan Allen', pos: 'WR', team: 'CHI', passTD: 0, rushTD: 0, recTD: 5, recs: 65 },
+    { id: 113, name: 'Tyler Scott', pos: 'WR', team: 'CHI', passTD: 0, rushTD: 0, recTD: 1, recs: 22 },
+    { id: 114, name: 'Velus Jones Jr.', pos: 'WR', team: 'CHI', passTD: 0, rushTD: 1, recTD: 0, recs: 10 },
+    { id: 115, name: 'Cole Kmet', pos: 'TE', team: 'CHI', passTD: 0, rushTD: 0, recTD: 6, recs: 72 },
+    { id: 116, name: 'Gerald Everett', pos: 'TE', team: 'CHI', passTD: 0, rushTD: 0, recTD: 2, recs: 28 },
 
     // NFC #3 - Philadelphia Eagles (PHI)
-    { id: 117, name: 'Jalen Hurts', pos: 'QB', team: 'PHI' },
-    { id: 118, name: 'Kenny Pickett', pos: 'QB', team: 'PHI' },
-    { id: 119, name: 'Saquon Barkley', pos: 'RB', team: 'PHI' },
-    { id: 120, name: 'Kenneth Gainwell', pos: 'RB', team: 'PHI' },
-    { id: 121, name: 'A.J. Brown', pos: 'WR', team: 'PHI' },
-    { id: 122, name: 'DeVonta Smith', pos: 'WR', team: 'PHI' },
-    { id: 123, name: 'Jahan Dotson', pos: 'WR', team: 'PHI' },
-    { id: 124, name: 'Johnny Wilson', pos: 'WR', team: 'PHI' },
-    { id: 125, name: 'Dallas Goedert', pos: 'TE', team: 'PHI' },
-    { id: 126, name: 'Grant Calcaterra', pos: 'TE', team: 'PHI' },
+    { id: 117, name: 'Jalen Hurts', pos: 'QB', team: 'PHI', passTD: 25, rushTD: 8, recTD: 0, recs: 0 },
+    { id: 118, name: 'Kenny Pickett', pos: 'QB', team: 'PHI', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
+    { id: 119, name: 'Saquon Barkley', pos: 'RB', team: 'PHI', passTD: 0, rushTD: 12, recTD: 4, recs: 55 },
+    { id: 120, name: 'Kenneth Gainwell', pos: 'RB', team: 'PHI', passTD: 0, rushTD: 3, recTD: 1, recs: 42 },
+    { id: 121, name: 'A.J. Brown', pos: 'WR', team: 'PHI', passTD: 0, rushTD: 0, recTD: 7, recs: 92 },
+    { id: 122, name: 'DeVonta Smith', pos: 'WR', team: 'PHI', passTD: 0, rushTD: 0, recTD: 4, recs: 85 },
+    { id: 123, name: 'Jahan Dotson', pos: 'WR', team: 'PHI', passTD: 0, rushTD: 0, recTD: 3, recs: 38 },
+    { id: 124, name: 'Johnny Wilson', pos: 'WR', team: 'PHI', passTD: 0, rushTD: 0, recTD: 1, recs: 12 },
+    { id: 125, name: 'Dallas Goedert', pos: 'TE', team: 'PHI', passTD: 0, rushTD: 0, recTD: 11, recs: 58 },
+    { id: 126, name: 'Grant Calcaterra', pos: 'TE', team: 'PHI', passTD: 0, rushTD: 0, recTD: 1, recs: 15 },
 
     // NFC #4 - Carolina Panthers (CAR)
-    { id: 127, name: 'Bryce Young', pos: 'QB', team: 'CAR' },
-    { id: 128, name: 'Andy Dalton', pos: 'QB', team: 'CAR' },
-    { id: 129, name: 'Chuba Hubbard', pos: 'RB', team: 'CAR' },
-    { id: 130, name: 'Trevor Etienne', pos: 'RB', team: 'CAR' },
-    { id: 131, name: 'Miles Sanders', pos: 'RB', team: 'CAR' },
-    { id: 132, name: 'Tetairoa McMillan', pos: 'WR', team: 'CAR' },
-    { id: 133, name: 'Xavier Legette', pos: 'WR', team: 'CAR' },
-    { id: 134, name: 'Hunter Renfrow', pos: 'WR', team: 'CAR' },
-    { id: 135, name: 'Adam Thielen', pos: 'WR', team: 'CAR' },
-    { id: 136, name: 'Jonathan Mingo', pos: 'WR', team: 'CAR' },
-    { id: 137, name: 'Tommy Tremble', pos: 'TE', team: 'CAR' },
-    { id: 138, name: 'Ja\'Tavion Sanders', pos: 'TE', team: 'CAR' },
+    { id: 127, name: 'Bryce Young', pos: 'QB', team: 'CAR', passTD: 21, rushTD: 2, recTD: 0, recs: 0 },
+    { id: 128, name: 'Andy Dalton', pos: 'QB', team: 'CAR', passTD: 2, rushTD: 0, recTD: 0, recs: 0 },
+    { id: 129, name: 'Chuba Hubbard', pos: 'RB', team: 'CAR', passTD: 0, rushTD: 6, recTD: 2, recs: 42 },
+    { id: 130, name: 'Trevor Etienne', pos: 'RB', team: 'CAR', passTD: 0, rushTD: 4, recTD: 0, recs: 15 },
+    { id: 131, name: 'Miles Sanders', pos: 'RB', team: 'CAR', passTD: 0, rushTD: 2, recTD: 1, recs: 22 },
+    { id: 132, name: 'Tetairoa McMillan', pos: 'WR', team: 'CAR', passTD: 0, rushTD: 0, recTD: 7, recs: 78 },
+    { id: 133, name: 'Xavier Legette', pos: 'WR', team: 'CAR', passTD: 0, rushTD: 0, recTD: 5, recs: 45 },
+    { id: 134, name: 'Hunter Renfrow', pos: 'WR', team: 'CAR', passTD: 0, rushTD: 0, recTD: 3, recs: 52 },
+    { id: 135, name: 'Adam Thielen', pos: 'WR', team: 'CAR', passTD: 0, rushTD: 0, recTD: 2, recs: 28 },
+    { id: 136, name: 'Jonathan Mingo', pos: 'WR', team: 'CAR', passTD: 0, rushTD: 0, recTD: 1, recs: 22 },
+    { id: 137, name: 'Tommy Tremble', pos: 'TE', team: 'CAR', passTD: 0, rushTD: 0, recTD: 3, recs: 35 },
+    { id: 138, name: 'Ja\'Tavion Sanders', pos: 'TE', team: 'CAR', passTD: 0, rushTD: 0, recTD: 1, recs: 18 },
 
     // NFC #5 - Los Angeles Rams (LAR)
-    { id: 139, name: 'Matthew Stafford', pos: 'QB', team: 'LAR' },
-    { id: 140, name: 'Jimmy Garoppolo', pos: 'QB', team: 'LAR' },
-    { id: 141, name: 'Kyren Williams', pos: 'RB', team: 'LAR' },
-    { id: 142, name: 'Blake Corum', pos: 'RB', team: 'LAR' },
-    { id: 143, name: 'Ronnie Rivers', pos: 'RB', team: 'LAR' },
-    { id: 144, name: 'Puka Nacua', pos: 'WR', team: 'LAR' },
-    { id: 145, name: 'Davante Adams', pos: 'WR', team: 'LAR' },
-    { id: 146, name: 'Cooper Kupp', pos: 'WR', team: 'LAR' },
-    { id: 147, name: 'Tutu Atwell', pos: 'WR', team: 'LAR' },
-    { id: 148, name: 'Jordan Whittington', pos: 'WR', team: 'LAR' },
-    { id: 149, name: 'Colby Parkinson', pos: 'TE', team: 'LAR' },
-    { id: 150, name: 'Davis Allen', pos: 'TE', team: 'LAR' },
+    { id: 139, name: 'Matthew Stafford', pos: 'QB', team: 'LAR', passTD: 46, rushTD: 0, recTD: 0, recs: 0 },
+    { id: 140, name: 'Jimmy Garoppolo', pos: 'QB', team: 'LAR', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
+    { id: 141, name: 'Kyren Williams', pos: 'RB', team: 'LAR', passTD: 0, rushTD: 10, recTD: 3, recs: 48 },
+    { id: 142, name: 'Blake Corum', pos: 'RB', team: 'LAR', passTD: 0, rushTD: 5, recTD: 1, recs: 15 },
+    { id: 143, name: 'Ronnie Rivers', pos: 'RB', team: 'LAR', passTD: 0, rushTD: 2, recTD: 0, recs: 12 },
+    { id: 144, name: 'Puka Nacua', pos: 'WR', team: 'LAR', passTD: 0, rushTD: 0, recTD: 10, recs: 129 },
+    { id: 145, name: 'Davante Adams', pos: 'WR', team: 'LAR', passTD: 0, rushTD: 0, recTD: 14, recs: 60 },
+    { id: 146, name: 'Cooper Kupp', pos: 'WR', team: 'LAR', passTD: 0, rushTD: 0, recTD: 8, recs: 75 },
+    { id: 147, name: 'Tutu Atwell', pos: 'WR', team: 'LAR', passTD: 0, rushTD: 1, recTD: 4, recs: 42 },
+    { id: 148, name: 'Jordan Whittington', pos: 'WR', team: 'LAR', passTD: 0, rushTD: 0, recTD: 2, recs: 28 },
+    { id: 149, name: 'Colby Parkinson', pos: 'TE', team: 'LAR', passTD: 0, rushTD: 0, recTD: 5, recs: 62 },
+    { id: 150, name: 'Davis Allen', pos: 'TE', team: 'LAR', passTD: 0, rushTD: 0, recTD: 2, recs: 18 },
 
     // NFC #6 - San Francisco 49ers (SF)
-    { id: 151, name: 'Brock Purdy', pos: 'QB', team: 'SF' },
-    { id: 152, name: 'Josh Dobbs', pos: 'QB', team: 'SF' },
-    { id: 153, name: 'Christian McCaffrey', pos: 'RB', team: 'SF' },
-    { id: 154, name: 'Brian Robinson Jr.', pos: 'RB', team: 'SF' },
-    { id: 155, name: 'Isaac Guerendo', pos: 'RB', team: 'SF' },
-    { id: 156, name: 'Jordan Mason', pos: 'RB', team: 'SF' },
-    { id: 157, name: 'Deebo Samuel', pos: 'WR', team: 'SF' },
-    { id: 158, name: 'Brandon Aiyuk', pos: 'WR', team: 'SF' },
-    { id: 159, name: 'Jauan Jennings', pos: 'WR', team: 'SF' },
-    { id: 160, name: 'Ricky Pearsall', pos: 'WR', team: 'SF' },
-    { id: 161, name: 'Chris Conley', pos: 'WR', team: 'SF' },
-    { id: 162, name: 'George Kittle', pos: 'TE', team: 'SF' },
-    { id: 163, name: 'Eric Saubert', pos: 'TE', team: 'SF' },
+    { id: 151, name: 'Brock Purdy', pos: 'QB', team: 'SF', passTD: 30, rushTD: 3, recTD: 0, recs: 0 },
+    { id: 152, name: 'Josh Dobbs', pos: 'QB', team: 'SF', passTD: 2, rushTD: 1, recTD: 0, recs: 0 },
+    { id: 153, name: 'Christian McCaffrey', pos: 'RB', team: 'SF', passTD: 0, rushTD: 12, recTD: 8, recs: 95 },
+    { id: 154, name: 'Brian Robinson Jr.', pos: 'RB', team: 'SF', passTD: 0, rushTD: 7, recTD: 1, recs: 22 },
+    { id: 155, name: 'Isaac Guerendo', pos: 'RB', team: 'SF', passTD: 0, rushTD: 4, recTD: 0, recs: 12 },
+    { id: 156, name: 'Jordan Mason', pos: 'RB', team: 'SF', passTD: 0, rushTD: 3, recTD: 0, recs: 10 },
+    { id: 157, name: 'Deebo Samuel', pos: 'WR', team: 'SF', passTD: 0, rushTD: 5, recTD: 6, recs: 68 },
+    { id: 158, name: 'Brandon Aiyuk', pos: 'WR', team: 'SF', passTD: 0, rushTD: 0, recTD: 7, recs: 78 },
+    { id: 159, name: 'Jauan Jennings', pos: 'WR', team: 'SF', passTD: 0, rushTD: 0, recTD: 8, recs: 52 },
+    { id: 160, name: 'Ricky Pearsall', pos: 'WR', team: 'SF', passTD: 0, rushTD: 0, recTD: 4, recs: 48 },
+    { id: 161, name: 'Chris Conley', pos: 'WR', team: 'SF', passTD: 0, rushTD: 0, recTD: 1, recs: 15 },
+    { id: 162, name: 'George Kittle', pos: 'TE', team: 'SF', passTD: 0, rushTD: 0, recTD: 9, recs: 82 },
+    { id: 163, name: 'Eric Saubert', pos: 'TE', team: 'SF', passTD: 0, rushTD: 0, recTD: 1, recs: 12 },
 
     // NFC #7 - Green Bay Packers (GB)
-    { id: 164, name: 'Jordan Love', pos: 'QB', team: 'GB' },
-    { id: 165, name: 'Malik Willis', pos: 'QB', team: 'GB' },
-    { id: 166, name: 'Josh Jacobs', pos: 'RB', team: 'GB' },
-    { id: 167, name: 'Emanuel Wilson', pos: 'RB', team: 'GB' },
-    { id: 168, name: 'MarShawn Lloyd', pos: 'RB', team: 'GB' },
-    { id: 169, name: 'Christian Watson', pos: 'WR', team: 'GB' },
-    { id: 170, name: 'Romeo Doubs', pos: 'WR', team: 'GB' },
-    { id: 171, name: 'Jayden Reed', pos: 'WR', team: 'GB' },
-    { id: 172, name: 'Dontayvion Wicks', pos: 'WR', team: 'GB' },
-    { id: 173, name: 'Bo Melton', pos: 'WR', team: 'GB' },
-    { id: 174, name: 'Malik Heath', pos: 'WR', team: 'GB' },
-    { id: 175, name: 'Luke Musgrave', pos: 'TE', team: 'GB' },
-    { id: 176, name: 'Tucker Kraft', pos: 'TE', team: 'GB' }
+    { id: 164, name: 'Jordan Love', pos: 'QB', team: 'GB', passTD: 23, rushTD: 2, recTD: 0, recs: 0 },
+    { id: 165, name: 'Malik Willis', pos: 'QB', team: 'GB', passTD: 2, rushTD: 3, recTD: 0, recs: 0 },
+    { id: 166, name: 'Josh Jacobs', pos: 'RB', team: 'GB', passTD: 0, rushTD: 13, recTD: 1, recs: 38 },
+    { id: 167, name: 'Emanuel Wilson', pos: 'RB', team: 'GB', passTD: 0, rushTD: 3, recTD: 0, recs: 15 },
+    { id: 168, name: 'MarShawn Lloyd', pos: 'RB', team: 'GB', passTD: 0, rushTD: 2, recTD: 0, recs: 10 },
+    { id: 169, name: 'Christian Watson', pos: 'WR', team: 'GB', passTD: 0, rushTD: 0, recTD: 6, recs: 42 },
+    { id: 170, name: 'Romeo Doubs', pos: 'WR', team: 'GB', passTD: 0, rushTD: 0, recTD: 5, recs: 62 },
+    { id: 171, name: 'Jayden Reed', pos: 'WR', team: 'GB', passTD: 0, rushTD: 2, recTD: 4, recs: 75 },
+    { id: 172, name: 'Dontayvion Wicks', pos: 'WR', team: 'GB', passTD: 0, rushTD: 0, recTD: 4, recs: 38 },
+    { id: 173, name: 'Bo Melton', pos: 'WR', team: 'GB', passTD: 0, rushTD: 0, recTD: 2, recs: 22 },
+    { id: 174, name: 'Malik Heath', pos: 'WR', team: 'GB', passTD: 0, rushTD: 0, recTD: 1, recs: 15 },
+    { id: 175, name: 'Luke Musgrave', pos: 'TE', team: 'GB', passTD: 0, rushTD: 0, recTD: 3, recs: 32 },
+    { id: 176, name: 'Tucker Kraft', pos: 'TE', team: 'GB', passTD: 0, rushTD: 0, recTD: 5, recs: 58 }
 ];
 const SLOTS = ['QB', 'RB1', 'RB2', 'WR1', 'WR2', 'TE', 'FLEX1', 'FLEX2'];
 
@@ -230,6 +261,10 @@ let state = {
     leagues: JSON.parse(localStorage.getItem(KEY_LEAGUES)) || [],
     currentLeagueId: null,
     view: 'dashboard',
+    draftTab: 'board', // board, roster, feed
+    statTab: 'fantasyPts', // fantasyPts, passTD, etc
+    sortCol: 'fantasyPts',
+    sortDir: 'desc',
     search: '',
     filters: {
         pos: ['QB', 'RB', 'WR', 'TE', 'FLEX'],
@@ -606,8 +641,94 @@ function subscribeToChanges() {
 }
 
 // --- App Control ---
+async function syncStatsFromESPN() {
+    console.log('Syncing stats from ESPN...');
+    try {
+        const response = await fetch(ESPN_STATS_URL, {
+            headers: {
+                'X-Fantasy-Filter': JSON.stringify({
+                    "players": {
+                        "limit": 1500,
+                        "sortDraftRank": { "sortPriority": 100, "sortAsc": true },
+                        "filterSlotIds": { "value": [0, 2, 4, 6] }
+                    }
+                })
+            }
+        });
+        const data = await response.json();
+        const espnPlayers = data.players || data;
+
+        let matches = 0;
+        PLAYERS.forEach(p => {
+            const ep = espnPlayers.find(m =>
+                (m.player?.fullName || m.fullName)?.toLowerCase() === p.name.toLowerCase()
+            );
+
+            if (ep) {
+                const pData = ep.player || ep;
+                // statSourceId 0 is actual, statSplitTypeId 0 is season total
+                const statsObj = pData.stats?.find(s => s.statSourceId === 0 && s.statSplitTypeId === 0)?.stats || {};
+
+                p.passYds = parseFloat(statsObj[STAT_MAP.passYds] || 0);
+                p.passTD = parseFloat(statsObj[STAT_MAP.passTD] || 0);
+                p.ints = parseFloat(statsObj[STAT_MAP.ints] || 0);
+                p.rushYds = parseFloat(statsObj[STAT_MAP.rushYds] || 0);
+                p.rushTD = parseFloat(statsObj[STAT_MAP.rushTD] || 0);
+                p.recs = parseFloat(statsObj[STAT_MAP.recs] || 0);
+                p.recYds = parseFloat(statsObj[STAT_MAP.recYds] || 0);
+                p.recTD = parseFloat(statsObj[STAT_MAP.recTD] || 0);
+                p.fumbles = parseFloat(statsObj[STAT_MAP.fumbles] || 0);
+                p.pass2pt = parseFloat(statsObj[STAT_MAP.pass2pt] || 0);
+                p.rush2pt = parseFloat(statsObj[STAT_MAP.rush2pt] || 0);
+                p.rec2pt = parseFloat(statsObj[STAT_MAP.rec2pt] || 0);
+
+                p.fantasyPts = calculateFantasyPoints(p);
+                matches++;
+            }
+        });
+        console.log(`Synced ${matches} players core stats from ESPN.`);
+        const l = getActiveLeague();
+        if (l) renderDraftUI(l);
+    } catch (err) {
+        console.error('ESPN Sync Failed:', err);
+    }
+}
+
+function calculateFantasyPoints(p) {
+    const l = getActiveLeague();
+    const s = l?.scoring || DEFAULT_SCORING;
+
+    let pts = 0;
+    pts += (p.passYds || 0) * (s.passYds || 0);
+    pts += (p.passTD || 0) * (s.passTD || 0);
+    pts += (p.ints || 0) * (s.ints || 0);
+    pts += (p.rushYds || 0) * (s.rushYds || 0);
+    pts += (p.rushTD || 0) * (s.rushTD || 0);
+    pts += (p.recs || 0) * (s.recs || 0);
+    pts += (p.recYds || 0) * (s.recYds || 0);
+    pts += (p.recTD || 0) * (s.recTD || 0);
+    pts += (p.fumbles || 0) * (s.fumbles || 0);
+    pts += (p.pass2pt || 0) * (s.pass2pt || 0);
+    pts += (p.rush2pt || 0) * (s.rush2pt || 0);
+    pts += (p.rec2pt || 0) * (s.rec2pt || 0);
+
+    return parseFloat(pts.toFixed(2));
+}
+
+function normalizePlayers() {
+    PLAYERS.forEach(p => {
+        p.passYds = p.passYds || 0; p.ints = p.ints || 0;
+        p.rushYds = p.rushYds || 0; p.recYds = p.recYds || 0;
+        p.fumbles = p.fumbles || 0; p.pass2pt = p.pass2pt || 0;
+        p.rush2pt = p.rush2pt || 0; p.rec2pt = p.rec2pt || 0;
+        p.fantasyPts = calculateFantasyPoints(p);
+    });
+}
+
 async function initApp() {
     console.log(`FF v${VERSION} Initializing...`);
+    normalizePlayers();
+    syncStatsFromESPN();
 
     const vEl = document.getElementById('app-version');
     if (vEl) vEl.innerText = `v${VERSION}`;
@@ -663,6 +784,8 @@ function renderBreadcrumbs() {
         html += `<span class="${state.view === 'league-detail' ? 'active' : ''}" onclick="navigate('league-detail', '${l.id}')">${l.name}</span>`;
         if (state.view === 'draft') {
             html += `<span class="active">DRAFT</span>`;
+        } else if (state.view === 'settings') {
+            html += `<span class="active">SETTINGS</span>`;
         }
     } else if (state.view === 'new-league') {
         html += `<span class="active">NEW LEAGUE</span>`;
@@ -746,15 +869,22 @@ function renderLeagueStats(l) {
         </div>
     `;
 
-    html += l.teams.map(t => `
-        <div class="table-row">
-            <div style="font-weight: 800; color: #1a73e8; cursor: pointer;" onclick="viewTeamRoster('${t.name}')">
-                ${t.name} ${t.name.toLowerCase() === state.currentUser.toLowerCase() ? '<span style="color:var(--red)">(YOU)</span>' : ''}
+    html += l.teams.map(t => {
+        const teamScore = t.roster.reduce((sum, rp) => {
+            const p = PLAYERS.find(pp => pp.id === rp.id);
+            return sum + (p ? p.fantasyPts : 0);
+        }, 0);
+
+        return `
+            <div class="table-row">
+                <div style="font-weight: 800; color: #1a73e8; cursor: pointer;" onclick="viewTeamRoster('${t.name}')">
+                    ${t.name} ${t.name.toLowerCase() === state.currentUser.toLowerCase() ? '<span style="color:var(--red)">(YOU)</span>' : ''}
+                </div>
+                <div style="font-weight: 800; color: var(--red);">${teamScore.toFixed(2)}</div>
+                <div style="font-size: 0.8rem; color: var(--gray); font-weight: 600;">${SLOTS.length - t.roster.length} UNDRAFTED</div>
             </div>
-            <div style="font-weight: 800; color: var(--red);">${t.score || 0}</div>
-            <div style="font-size: 0.8rem; color: var(--gray); font-weight: 600;">${SLOTS.length - t.roster.length} UNDRAFTED</div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 
     container.innerHTML = html;
 
@@ -772,14 +902,88 @@ function renderLeagueStats(l) {
         draftBtn.innerText = "START DRAFT";
         draftBtn.classList.toggle('hidden', !isAdmin());
     }
+
+    if (state.view === 'settings') renderSettings(l);
+}
+
+function renderSettings(l) {
+    const list = document.getElementById('scoring-settings-list');
+    const adminActions = document.getElementById('settings-admin-actions');
+    if (!list || !l) return;
+
+    const s = l.scoring || DEFAULT_SCORING;
+    const isAdminUser = isAdmin();
+
+    adminActions.classList.toggle('hidden', !isAdminUser);
+
+    const labels = {
+        passYds: "Pass Yards (Multiplier)",
+        rushYds: "Rush Yards (Multiplier)",
+        recYds: "Rec Yards (Multiplier)",
+        passTD: "Pass TDs",
+        rushTD: "Rush TDs",
+        recTD: "Rec TDs",
+        recs: "Receptions",
+        pass2pt: "Pass 2pt Conversion",
+        rush2pt: "Rush 2pt Conversion",
+        rec2pt: "Rec 2pt Conversion",
+        ints: "Interceptions",
+        fumbles: "Fumbles Lost"
+    };
+
+    list.innerHTML = Object.keys(DEFAULT_SCORING).map(key => `
+        <div class="form-group mb-0">
+            <label style="font-size: 0.65rem; color: var(--gray);">${labels[key].toUpperCase()}</label>
+            <input type="number" step="0.001" value="${s[key]}" 
+                   data-score-key="${key}" 
+                   ${!isAdminUser ? 'disabled' : ''} 
+                   style="font-weight: 800; padding: 8px; border-radius: 8px; border: 1px solid var(--border); width: 100%; ${!isAdminUser ? 'opacity: 0.6; background: #f9f9f9;' : ''}">
+        </div>
+    `).join('');
 }
 
 function renderDraftUI(l) {
     if (!l) return;
-    renderFilters(l);
-    renderPlayerList(l);
-    renderDraftOrder(l);
-    renderRoster(l);
+
+    // Toggle Tab Content Visibilty
+    const tabs = ['board', 'roster', 'feed'];
+    tabs.forEach(t => {
+        const el = document.getElementById(`tab-content-${t}`);
+        if (el) el.classList.toggle('hidden', state.draftTab !== t);
+
+        const btn = document.querySelector(`[data-draft-tab="${t}"]`);
+        if (btn) btn.classList.toggle('active', state.draftTab === t);
+    });
+
+    if (state.draftTab === 'board') {
+        renderFilters(l);
+        renderPlayerList(l);
+
+        // Update Stat Tabs
+        const stats = ['passTD', 'rushTD', 'recTD', 'recs'];
+        stats.forEach(s => {
+            const btn = document.querySelector(`[data-stat-tab="${s}"]`);
+            if (btn) btn.classList.toggle('active', state.statTab === s);
+        });
+    } else if (state.draftTab === 'roster') {
+        renderRoster(l);
+    } else if (state.draftTab === 'feed') {
+        renderDraftFeed(l);
+    }
+
+    // Update Draft Status
+    const statusBadge = document.getElementById('draft-status-badge');
+    if (statusBadge) {
+        const pickNum = (l.currentPick || 0) + 1;
+        const totalPicks = (l.draftOrder || []).length;
+        if (pickNum > totalPicks && totalPicks > 0) {
+            statusBadge.innerText = "DRAFT COMPLETE";
+            statusBadge.className = "badge-red";
+        } else {
+            statusBadge.innerText = `Pick ${pickNum}`;
+            statusBadge.className = "badge-red";
+        }
+    }
 }
 
 window.viewTeamRoster = (teamName) => {
@@ -954,24 +1158,35 @@ document.addEventListener('click', () => {
     if (openDropdown) closeDropdown();
 });
 
+window.toggleSort = (col) => {
+    if (state.sortCol === col) {
+        state.sortDir = state.sortDir === 'desc' ? 'asc' : 'desc';
+    } else {
+        state.sortCol = col;
+        state.sortDir = 'desc';
+    }
+    // Sync statTab with sortCol if it's a known stat tab
+    const validTabs = ['fantasyPts', 'passYds', 'passTD', 'rushYds', 'rushTD', 'recs', 'recYds', 'recTD'];
+    if (validTabs.includes(col)) {
+        state.statTab = col;
+    }
+    updateUI();
+};
+
 function renderPlayerList(l) {
-    const c = document.getElementById('player-list');
-    if (!c) return;
+    const listEl = document.getElementById('player-list');
+    if (!listEl) return;
 
-    const picked = l.picks.map(p => p.playerId);
+    const picked = (l.picks || []).map(p => p.playerId);
+    const query = state.search ? state.search.toLowerCase() : '';
 
-    // Filter the list
-    let filtered = PLAYERS.filter(p => {
+    const filtered = PLAYERS.filter(p => {
         const isPicked = picked.includes(p.id);
-
-        // 1. Availability Filter
         const showDrafted = state.filters.avail.includes('drafted');
         const showUndrafted = state.filters.avail.includes('undrafted');
-
         if (!showDrafted && isPicked) return false;
         if (!showUndrafted && !isPicked) return false;
 
-        // 2. Position Filter
         if (state.filters.pos.length > 0) {
             const flexPos = ['WR', 'RB', 'TE'];
             const matchPos = state.filters.pos.some(f => {
@@ -981,29 +1196,93 @@ function renderPlayerList(l) {
             if (!matchPos) return false;
         }
 
-        // 3. Team Filter
-        if (state.filters.team.length > 0) {
-            if (!state.filters.team.includes(p.team)) return false;
-        }
-
-        // 4. Search Filter
-        if (state.search && !p.name.toLowerCase().includes(state.search.toLowerCase())) return false;
-
+        if (state.filters.team.length > 0 && !state.filters.team.includes(p.team)) return false;
+        if (query && !p.name.toLowerCase().includes(query) && !p.team.toLowerCase().includes(query)) return false;
         return true;
     });
 
-    const currentPicker = l.draftOrder[l.currentPick];
-    const isMyTurn = currentPicker && currentPicker.name.toLowerCase() === state.currentUser.toLowerCase();
+    // Sorting Logic
+    filtered.sort((a, b) => {
+        let valA = a[state.sortCol] || 0;
+        let valB = b[state.sortCol] || 0;
 
-    c.innerHTML = filtered.map(p => `
-        <div class="player-item" style="${picked.includes(p.id) ? 'background: #fdf2f2; opacity: 0.8;' : ''}">
-            <div>
-                <strong>${p.name}</strong> ${picked.includes(p.id) ? '<span style="color:var(--red); font-size: 0.6rem; font-weight: 800;">[PICKED]</span>' : ''}<br>
-                <small>${p.team} - ${p.pos}</small>
-            </div>
-            ${isMyTurn && !picked.includes(p.id) ? `<button class="btn primary" style="padding: 6px 16px; border-radius: 8px; font-size: 0.7rem;" onclick="draftPlayer(${p.id})">PICK</button>` : ''}
+        if (typeof valA === 'string') {
+            valA = valA.toLowerCase();
+            valB = valB.toLowerCase();
+        }
+
+        if (valA < valB) return state.sortDir === 'desc' ? 1 : -1;
+        if (valA > valB) return state.sortDir === 'desc' ? -1 : 1;
+        return 0;
+    });
+
+    const currentPicker = (l.draftOrder || [])[l.currentPick];
+    const isMyTurn = currentPicker && currentPicker.name.toLowerCase() === state.currentUser.toLowerCase();
+    const pickNumTotal = (l.currentPick || 0) + 1;
+
+    const getSortIcon = (col) => {
+        if (state.sortCol !== col) return '<span style="opacity:0.2;">⇅</span>';
+        return state.sortDir === 'desc' ? '↓' : '↑';
+    };
+
+    listEl.innerHTML = `
+        <div class="table-wrapper" style="overflow-x: auto; background: white; border-radius: 12px; border: 1px solid var(--border);">
+            <table class="simple-table">
+                <thead>
+                    <tr>
+                        <th onclick="toggleSort('name')" style="cursor:pointer; min-width:160px; white-space:nowrap;">PLAYER ${getSortIcon('name')}</th>
+                        <th onclick="toggleSort('team')" style="cursor:pointer; white-space:nowrap; padding: 0 10px;">TEAM ${getSortIcon('team')}</th>
+                        <th onclick="toggleSort('pos')" style="cursor:pointer; white-space:nowrap; padding: 0 10px;">POS ${getSortIcon('pos')}</th>
+                        <th onclick="toggleSort('fantasyPts')" style="cursor:pointer; white-space:nowrap; padding: 0 10px;" class="${state.statTab === 'fantasyPts' ? 'active-col' : ''}">POINTS ${getSortIcon('fantasyPts')}</th>
+                        <th onclick="toggleSort('passYds')" style="cursor:pointer; white-space:nowrap; padding: 0 10px;" class="${state.statTab === 'passYds' ? 'active-col' : ''}">PASS YDS ${getSortIcon('passYds')}</th>
+                        <th onclick="toggleSort('passTD')" style="cursor:pointer; white-space:nowrap; padding: 0 10px;" class="${state.statTab === 'passTD' ? 'active-col' : ''}">PASS TD ${getSortIcon('passTD')}</th>
+                        <th onclick="toggleSort('rushYds')" style="cursor:pointer; white-space:nowrap; padding: 0 10px;" class="${state.statTab === 'rushYds' ? 'active-col' : ''}">RUSH YDS ${getSortIcon('rushYds')}</th>
+                        <th onclick="toggleSort('rushTD')" style="cursor:pointer; white-space:nowrap; padding: 0 10px;" class="${state.statTab === 'rushTD' ? 'active-col' : ''}">RUSH TD ${getSortIcon('rushTD')}</th>
+                        <th onclick="toggleSort('recs')" style="cursor:pointer; white-space:nowrap; padding: 0 10px;" class="${state.statTab === 'recs' ? 'active-col' : ''}">RECS ${getSortIcon('recs')}</th>
+                        <th onclick="toggleSort('recYds')" style="cursor:pointer; white-space:nowrap; padding: 0 10px;" class="${state.statTab === 'recYds' ? 'active-col' : ''}">REC YDS ${getSortIcon('recYds')}</th>
+                        <th onclick="toggleSort('recTD')" style="cursor:pointer; white-space:nowrap; padding: 0 10px;" class="${state.statTab === 'recTD' ? 'active-col' : ''}">REC TD ${getSortIcon('recTD')}</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="player-table-body"></tbody>
+            </table>
         </div>
-    `).join('') || '<div class="p-8 text-center opacity-30">NO PLAYERS MATCH FILTERS</div>';
+    `;
+
+    const tbody = document.getElementById('player-table-body');
+    filtered.forEach(p => {
+        const isPicked = picked.includes(p.id);
+        const tr = document.createElement('tr');
+        if (isPicked) tr.className = 'picked';
+
+        tr.innerHTML = `
+            <td style="white-space:nowrap;"><div class="p-name">${p.name}</div></td>
+            <td style="text-align:center; font-weight:800; color:var(--gray); padding: 0 10px;">${p.team}</td>
+            <td style="text-align:center; font-weight:800; color:var(--gray); padding: 0 10px;">${p.pos}</td>
+            <td class="stat-cell ${state.statTab === 'fantasyPts' ? 'active' : ''}" style="text-align:center; padding: 0 10px; color: var(--red); font-weight:bold;">${p.fantasyPts || 0}</td>
+            <td class="stat-cell ${state.statTab === 'passYds' ? 'active' : ''}" style="text-align:center; padding: 0 10px;">${Math.round(p.passYds || 0)}</td>
+            <td class="stat-cell ${state.statTab === 'passTD' ? 'active' : ''}" style="text-align:center; padding: 0 10px;">${p.passTD || 0}</td>
+            <td class="stat-cell ${state.statTab === 'rushYds' ? 'active' : ''}" style="text-align:center; padding: 0 10px;">${Math.round(p.rushYds || 0)}</td>
+            <td class="stat-cell ${state.statTab === 'rushTD' ? 'active' : ''}" style="text-align:center; padding: 0 10px;">${p.rushTD || 0}</td>
+            <td class="stat-cell ${state.statTab === 'recs' ? 'active' : ''}" style="text-align:center; padding: 0 10px;">${p.recs || 0}</td>
+            <td class="stat-cell ${state.statTab === 'recYds' ? 'active' : ''}" style="text-align:center; padding: 0 10px;">${Math.round(p.recYds || 0)}</td>
+            <td class="stat-cell ${state.statTab === 'recTD' ? 'active' : ''}" style="text-align:center; padding: 0 10px;">${p.recTD || 0}</td>
+            <td class="action-cell" style="padding: 10px 20px; text-align:right;"></td>
+        `;
+
+        if (!isPicked && isMyTurn) {
+            const btn = document.createElement('button');
+            btn.className = 'btn primary btn-sm';
+            btn.innerText = `Pick ${pickNumTotal}`;
+            btn.onclick = () => draftPlayer(p.id);
+            tr.querySelector('.action-cell').appendChild(btn);
+        }
+        tbody.appendChild(tr);
+    });
+
+    if (filtered.length === 0) {
+        listEl.innerHTML = '<div class="p-12 text-center opacity-30 font-bold">NO MATCHES FOUND</div>';
+    }
 }
 
 function getTeamRosterMap(roster = []) {
@@ -1071,7 +1350,13 @@ window.draftPlayer = (playerId) => {
     }
 
     team.roster.push(player);
-    l.picks.push({ playerId, teamName: team.name });
+    l.picks.push({
+        playerId,
+        owner: team.name,
+        pickNum: (l.currentPick || 0) + 1,
+        pos: player.pos,
+        team: player.team
+    });
     l.currentPick++;
 
     saveSession();
@@ -1099,24 +1384,80 @@ function renderDraftOrder(l) {
 }
 
 function renderRoster(l) {
-    const c = document.getElementById('roster-grid');
-    if (!c) return;
+    const grid = document.getElementById('roster-grid-main');
+    if (!grid) return;
 
-    const team = l.teams.find(t => t.name.toLowerCase() === state.currentUser.toLowerCase());
-    if (!team) return;
+    const myTeam = l.teams.find(t => t.name.toLowerCase() === state.currentUser.toLowerCase());
+    if (!myTeam) {
+        grid.innerHTML = '<div class="text-center font-bold p-8">TEAM NOT FOUND</div>';
+        return;
+    }
 
-    const rosterMap = getTeamRosterMap(team.roster);
+    const map = getTeamRosterMap(myTeam.roster);
+    grid.innerHTML = '';
 
-    c.innerHTML = SLOTS.map(slot => {
-        const p = rosterMap[slot];
-        return `
-            <div style="padding: 6px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.65rem; margin-bottom: 4px; background: white; display: flex; justify-content: space-between;">
-                <div><span style="opacity: 0.5; font-weight: 800; width: 45px; display: inline-block;">${slot}</span>: 
-                <span style="font-weight: 800;">${p ? p.name : '-'}</span></div>
-                ${p ? `<span style="font-size:0.55rem; color:var(--gray);">${p.team}</span>` : ''}
+    SLOTS.forEach(slot => {
+        const p = map[slot];
+        const box = document.createElement('div');
+        box.className = 'roster-slot-card';
+
+        box.innerHTML = `
+            <div class="slot-label">${slot}</div>
+            <div style="flex: 1;">
+                ${p ? `
+                    <div class="p-name">${p.name}</div>
+                    <div class="p-meta">${p.team} - ${p.pos}</div>
+                ` : `
+                    <div class="p-meta" style="font-style: italic; opacity: 0.5;">Empty</div>
+                `}
+            </div>
+            ${p ? `<div class="stat-cell active-stat" style="padding: 4px 10px; border-radius: 6px;">${p[state.statTab] || 0}</div>` : ''}
+        `;
+        grid.appendChild(box);
+    });
+}
+
+function renderDraftFeed(l) {
+    const queueEl = document.getElementById('snake-order-list-feed');
+    const historyEl = document.getElementById('draft-history-list');
+    if (!queueEl || !historyEl) return;
+
+    queueEl.innerHTML = '';
+    const pickNum = l.currentPick || 0;
+    const upcoming = (l.draftOrder || []).slice(pickNum, pickNum + 8);
+
+    upcoming.forEach((u, idx) => {
+        const div = document.createElement('div');
+        div.className = `feed-item ${idx === 0 ? 'active' : ''}`;
+        div.innerHTML = `
+            <div style="display:flex; justify-content:space-between; width: 100%; align-items:center;">
+                <span class="p-meta">PICK ${pickNum + idx + 1}</span>
+                <span style="font-weight:800;">${u.name.toUpperCase()} ${idx === 0 ? '🏈' : ''}</span>
             </div>
         `;
-    }).join('');
+        queueEl.appendChild(div);
+    });
+
+    historyEl.innerHTML = '';
+    const recent = [...(l.picks || [])].reverse();
+    recent.forEach(pk => {
+        const p = PLAYERS.find(pp => pp.id === pk.playerId);
+        const div = document.createElement('div');
+        div.className = 'history-item';
+        div.innerHTML = `
+            <div class="pick-num">#${pk.pickNum}</div>
+            <div style="flex:1;">
+                <div class="p-name" style="font-size: 0.9rem;">${p ? p.name : 'Unknown'}</div>
+                <div class="p-meta">${p ? p.pos : ''}</div>
+            </div>
+            <div class="team-picked">${pk.owner.toUpperCase()}</div>
+        `;
+        historyEl.appendChild(div);
+    });
+
+    if (recent.length === 0) {
+        historyEl.innerHTML = '<div class="p-12 text-center opacity-30 font-bold">NO PICKS YET</div>';
+    }
 }
 
 // --- Event Handlers ---
@@ -1171,6 +1512,30 @@ function setupListeners() {
     // Dashboard
     document.getElementById('show-create-league-btn').onclick = () => navigate('new-league');
 
+    // Settings
+    document.getElementById('show-settings-btn').onclick = () => {
+        const l = getActiveLeague();
+        navigate('settings', l.id);
+    };
+
+    document.getElementById('save-settings-btn').onclick = () => {
+        const l = getActiveLeague();
+        if (!isAdmin()) return;
+
+        const inputs = document.querySelectorAll('#scoring-settings-list input');
+        const newScoring = {};
+        inputs.forEach(input => {
+            const key = input.dataset.scoreKey;
+            newScoring[key] = parseFloat(input.value) || 0;
+        });
+
+        l.scoring = newScoring;
+        normalizePlayers(); // Recalculate fantasy pts for everyone
+        saveSession();
+        alert("SETTINGS SAVED AND SCORES RECALCULATED.");
+        navigate('league-detail', l.id);
+    };
+
     // League Creation
     document.getElementById('save-league-btn').onclick = () => {
         const name = document.getElementById('league-name').value.trim();
@@ -1181,6 +1546,7 @@ function setupListeners() {
             name,
             creator: state.currentUser,
             teams: [{ name: state.currentUser, roster: [], score: 0 }],
+            scoring: { ...DEFAULT_SCORING },
             picks: [],
             draftOrder: [],
             currentPick: 0
@@ -1240,6 +1606,24 @@ function setupListeners() {
         const l = getActiveLeague();
         renderPlayerList(l);
     };
+
+    // Tab Switching
+    document.addEventListener('click', (e) => {
+        const draftTab = e.target.closest('[data-draft-tab]');
+        if (draftTab) {
+            state.draftTab = draftTab.dataset.draftTab;
+            const l = getActiveLeague();
+            renderDraftUI(l);
+        }
+
+        // Stat Selection Tabs
+        const statTab = e.target.closest('[data-stat-tab]');
+        if (statTab) {
+            state.statTab = statTab.dataset.statTab;
+            const l = getActiveLeague();
+            renderDraftUI(l);
+        }
+    });
 }
 
 function updateDebugInfo() {
