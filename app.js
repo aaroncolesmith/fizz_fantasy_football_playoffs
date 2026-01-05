@@ -4,7 +4,7 @@
  */
 
 // --- Constants & Pool Data ---
-const VERSION = '1.6.6';
+const VERSION = '1.6.7';
 
 // Initialize Supabase (Using standard CDN global)
 const SUPABASE_URL = 'https://rchbzcfhnhshbvtjtfay.supabase.co';
@@ -210,30 +210,40 @@ window.handleJoinCode = async function () {
 async function refreshGlobalState() {
     if (!supabase) return;
     try {
+        console.log("🔍 Global Cloud Refresh...");
+
+        // Fetch all recent states to ensure we don't miss anything
         const { data, error } = await supabase
             .from('play_events')
             .select('*')
             .eq('event_type', 'FIZZYFEST_STATE')
-            .order('occurred_at', { ascending: false });
+            .order('occurred_at', { ascending: false })
+            .limit(50);
 
         if (error) throw error;
 
         if (data && data.length > 0) {
             const latestLeaguesMap = {};
+            let foundAny = false;
+
             data.forEach(event => {
                 if (event.event_data && Array.isArray(event.event_data.leagues)) {
                     event.event_data.leagues.forEach(l => {
-                        const existing = latestLeaguesMap[l.id];
-                        const incomingPicks = l.picks?.length || 0;
-                        const existingPicks = existing?.picks?.length || 0;
-                        if (!existing || incomingPicks > existingPicks) {
-                            latestLeaguesMap[l.id] = l;
+                        const normalizedUser = (state.currentUser || '').toLowerCase();
+                        const isCreator = l.creator.toLowerCase() === normalizedUser;
+                        const isMember = l.teams.some(t => t.name.toLowerCase() === normalizedUser);
+
+                        if (isCreator || isMember) {
+                            foundAny = true;
+                            const existing = latestLeaguesMap[l.id];
+                            const incomingPicks = l.picks?.length || 0;
+                            const existingPicks = existing?.picks?.length || 0;
+
+                            if (!existing || incomingPicks > existingPicks) {
+                                latestLeaguesMap[l.id] = l;
+                            }
                         }
                     });
-                }
-                if (!CLOUD_SYNC_ID && event.game_code) {
-                    CLOUD_SYNC_ID = event.game_code;
-                    localStorage.setItem('ff_sync_id', CLOUD_SYNC_ID);
                 }
             });
 
@@ -241,8 +251,10 @@ async function refreshGlobalState() {
             if (allLeagues.length > 0) {
                 state.leagues = allLeagues;
                 localStorage.setItem(KEY_LEAGUES, JSON.stringify(state.leagues));
-                console.log(`Global Refresh synced ${allLeagues.length} leagues.`);
+                console.log(`✅ Global Refresh: Found ${allLeagues.length} leagues for ${state.currentUser}.`);
                 return true;
+            } else if (foundAny) {
+                console.log("Empty leagues list despite finding involvement.");
             }
         }
     } catch (e) {
@@ -317,7 +329,7 @@ function subscribeToChanges() {
                         // Check if we should join this league
                         const normalizedUser = (state.currentUser || '').toLowerCase();
                         if (inL.teams.some(t => t.name.toLowerCase() === normalizedUser) || inL.creator.toLowerCase() === normalizedUser) {
-                            console.log(`✨ Joined New League: ${inL.name}`);
+                            console.log(`✨ Auto-Joined New League: ${inL.name}`);
                             state.leagues.push(inL);
                             changedVisible = true;
                         }
@@ -325,6 +337,11 @@ function subscribeToChanges() {
                 });
 
                 if (changedVisible) {
+                    // If we just got an update for a league we care about, sync our global ID to match if we haven't yet
+                    if (!CLOUD_SYNC_ID && payload.new.game_code) {
+                        CLOUD_SYNC_ID = payload.new.game_code;
+                        localStorage.setItem('ff_sync_id', CLOUD_SYNC_ID);
+                    }
                     localStorage.setItem(KEY_LEAGUES, JSON.stringify(state.leagues));
                     updateUI();
                 }
