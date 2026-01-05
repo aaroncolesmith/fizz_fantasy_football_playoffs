@@ -4,7 +4,7 @@
  */
 
 // --- Constants & Pool Data ---
-const VERSION = '1.6.2';
+const VERSION = '1.6.3';
 
 // Initialize Supabase (Using standard CDN global)
 const SUPABASE_URL = 'https://rchbzcfhnhshbvtjtfay.supabase.co';
@@ -239,36 +239,57 @@ function clearSession() {
 }
 
 // --- Realtime Sync ---
+let syncStatus = 'connecting';
+
 function subscribeToChanges() {
     if (!supabase) return;
 
-    // Listen for NEW state events in the play_events table
-    // filter by event_type to only get state snapshots
-    supabase
-        .channel('public:play_events')
+    console.log('🔄 Initializing Realtime Subscription...');
+    const channel = supabase
+        .channel('ff_global_sync')
         .on('postgres_changes', {
             event: 'INSERT',
             schema: 'public',
             table: 'play_events',
-            filter: `event_type=eq.FIZZYFEST_STATE`
+            filter: 'event_type=eq.FIZZYFEST_STATE'
         }, payload => {
-            console.log('Realtime Update Received:', payload);
+            console.log('🚀 Realtime Update Received!', payload);
             if (payload.new && payload.new.event_data && Array.isArray(payload.new.event_data.leagues)) {
-                // Merge/Overlay the incoming leagues into our state
-                // We trust the latest insert as the truth
+
+                // Smart Merge: Only update if the incoming state is actually newer or different
+                // To keep it simple for now, we'll trust the latest insert.
                 state.leagues = payload.new.event_data.leagues;
                 localStorage.setItem(KEY_LEAGUES, JSON.stringify(state.leagues));
 
-                // If the incoming event has a game_code, ensure we store it if we don't have one
                 if (!CLOUD_SYNC_ID && payload.new.game_code) {
                     CLOUD_SYNC_ID = payload.new.game_code;
                     localStorage.setItem('ff_sync_id', CLOUD_SYNC_ID);
                 }
 
                 updateUI();
+
+                // Visual feedback for the user
+                const badge = document.querySelector('.live-indicator');
+                if (badge) {
+                    badge.style.background = '#00ff00';
+                    setTimeout(() => badge.style.background = '#4cd964', 500);
+                }
             }
         })
-        .subscribe();
+        .subscribe((status, err) => {
+            console.log(`📡 Realtime Status: ${status}`, err || '');
+            syncStatus = status;
+            const indicators = document.querySelectorAll('.live-indicator');
+            indicators.forEach(ind => {
+                if (status === 'SUBSCRIBED') {
+                    ind.style.background = '#4cd964'; // Green
+                    ind.title = 'Live Sync Active';
+                } else if (status === 'TIMED_OUT' || status === 'CLOSED') {
+                    ind.style.background = '#ff3b30'; // Red
+                    ind.title = 'Live Sync Disconnected';
+                }
+            });
+        });
 }
 
 // --- App Control ---
@@ -391,7 +412,10 @@ function renderLeagueStats(l) {
 
     let html = `
         <div class="d-flex justify-between items-center mb-6">
-            <h2 style="font-weight: 800; letter-spacing: -1px; text-transform: uppercase;">${l.name}</h2>
+            <h2 style="font-weight: 800; letter-spacing: -1px; text-transform: uppercase; display: flex; align-items: center; gap: 10px;">
+                ${l.name}
+                <div class="live-indicator" style="width: 8px; height: 8px; border-radius: 50%; background: ${syncStatus === 'SUBSCRIBED' ? '#4cd964' : '#ff3b30'};"></div>
+            </h2>
             ${CLOUD_SYNC_ID ? `
                 <div style="text-align:right;">
                     <button onclick="toggleLeagueCode(event)" class="btn-mini" style="opacity: 0.3; border:none; background:transparent;">Show Code</button>
