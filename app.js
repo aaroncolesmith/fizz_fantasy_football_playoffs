@@ -4,7 +4,7 @@
  */
 
 // --- Constants & Pool Data ---
-const VERSION = '2.7.1';
+const VERSION = '2.7.2';
 
 // --- ESPN API Configuration ---
 const ESPN_STATS_URL = 'https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/2025/players?view=kona_player_info';
@@ -1528,27 +1528,27 @@ function renderDraftFeed(l) {
 
     filteredEvents.forEach(event => {
         const div = document.createElement('div');
+        div.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid #eee;';
 
         if (event.type === 'upcoming') {
-            // Upcoming pick
-            div.className = `feed-item ${event.isCurrent ? 'active' : ''}`;
-            div.style.cssText = 'border-left: 3px solid var(--green); background: rgba(76, 217, 100, 0.05);';
+            // Upcoming pick - green style
+            if (event.isCurrent) {
+                div.style.cssText += ' background: rgba(76, 217, 100, 0.1); border-left: 3px solid var(--green);';
+            }
             div.innerHTML = `
-                <div style="display:flex; justify-content:space-between; width: 100%; align-items:center;">
-                    <span class="p-meta" style="font-weight: 700; color: var(--green);">PICK ${event.pickNum}</span>
-                    <span style="font-weight:800; color: var(--green);">${event.owner.toUpperCase()} ${event.isCurrent ? '🏈' : ''}</span>
-                </div>
+                <span style="font-weight: 700; color: ${event.isCurrent ? 'var(--green)' : 'var(--gray)'}; min-width: 80px;">PICK ${event.pickNum}</span>
+                <span style="flex: 1; text-align: right; font-weight: 800;">${event.owner.toUpperCase()} ${event.isCurrent ? '🏈' : ''}</span>
             `;
         } else {
-            // Past pick
-            div.className = 'history-item';
+            // Past pick - show player info on one line
+            const playerInfo = event.player
+                ? `${event.player.name} <span style="color: var(--gray); font-weight: 600;">${event.player.pos} • ${event.player.team}</span>`
+                : 'Unknown Player';
+
             div.innerHTML = `
-                <div class="pick-num" style="background: var(--gray); color: white;">#${event.pickNum}</div>
-                <div style="flex:1;">
-                    <div class="p-name" style="font-size: 0.9rem;">${event.player ? event.player.name : 'Unknown'}</div>
-                    <div class="p-meta">${event.player ? event.player.pos : ''} ${event.player ? '• ' + event.player.team : ''}</div>
-                </div>
-                <div class="team-picked">${event.owner.toUpperCase()}</div>
+                <span style="font-weight: 700; color: var(--gray); min-width: 80px;">#${event.pickNum}</span>
+                <span style="flex: 1; font-weight: 700;">${playerInfo}</span>
+                <span style="font-weight: 800; min-width: 120px; text-align: right;">${event.owner.toUpperCase()}</span>
             `;
         }
 
