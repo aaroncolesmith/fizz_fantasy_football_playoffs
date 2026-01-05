@@ -4,7 +4,7 @@
  */
 
 // --- Constants & Pool Data ---
-const VERSION = '1.6.5';
+const VERSION = '1.6.6';
 
 // Initialize Supabase (Using standard CDN global)
 const SUPABASE_URL = 'https://rchbzcfhnhshbvtjtfay.supabase.co';
@@ -131,31 +131,77 @@ async function loadFromCloud(syncId) {
     const id = syncId || CLOUD_SYNC_ID;
     if (!id || !supabase) return false;
 
+    console.log("📥 Loading from Cloud Code:", id);
     try {
         const { data, error } = await supabase
             .from('play_events')
-            .select('event_data')
+            .select('*')
             .eq('game_code', id)
             .eq('event_type', 'FIZZYFEST_STATE')
             .order('occurred_at', { ascending: false })
-            .limit(1)
-            .single();
+            .limit(10); // Check last 10 snapshots for this code
 
         if (error) throw error;
 
-        if (data && data.event_data && Array.isArray(data.event_data.leagues)) {
-            state.leagues = data.event_data.leagues;
-            CLOUD_SYNC_ID = id;
-            localStorage.setItem('ff_sync_id', id);
-            localStorage.setItem(KEY_LEAGUES, JSON.stringify(state.leagues));
-            console.log("Cloud Pull Successful for", id);
-            return true;
+        if (data && data.length > 0) {
+            let changed = false;
+            data.forEach(event => {
+                if (event.event_data && Array.isArray(event.event_data.leagues)) {
+                    event.event_data.leagues.forEach(inL => {
+                        const existingIdx = state.leagues.findIndex(l => l.id === inL.id);
+                        const incomingPicks = inL.picks?.length || 0;
+                        if (existingIdx === -1) {
+                            state.leagues.push(inL);
+                            changed = true;
+                        } else {
+                            const existingPicks = state.leagues[existingIdx].picks?.length || 0;
+                            if (incomingPicks > existingPicks) {
+                                state.leagues[existingIdx] = inL;
+                                changed = true;
+                            }
+                        }
+                    });
+                }
+            });
+
+            if (changed) {
+                CLOUD_SYNC_ID = id;
+                localStorage.setItem('ff_sync_id', id);
+                localStorage.setItem(KEY_LEAGUES, JSON.stringify(state.leagues));
+                console.log("✅ Cloud Sync Success for", id);
+                updateUI();
+                return true;
+            }
         }
     } catch (e) {
-        console.warn("Cloud Pull Failed", e);
+        console.warn("❌ Cloud Pull Failed", e);
     }
     return false;
 }
+
+window.handleJoinCode = async function () {
+    const input = document.getElementById('sync-input');
+    const code = input.value.trim().toUpperCase();
+    if (!code) return alert('ENTER A CODE');
+
+    const btn = document.querySelector('button[onclick="handleJoinCode()"]');
+    const originalText = btn.innerText;
+    btn.innerText = 'WAIT...';
+    btn.disabled = true;
+
+    const success = await loadFromCloud(code);
+
+    btn.innerText = originalText;
+    btn.disabled = false;
+
+    if (success) {
+        alert('SUCCESS! LEAGUE(S) ADDED.');
+        input.value = '';
+        navigate('dashboard-view');
+    } else {
+        alert('CODE NOT FOUND OR NO CHANGES DETECTED.');
+    }
+};
 
 /**
  * Searches Supabase for ANY league state where the user is involved.

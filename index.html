@@ -54,8 +54,20 @@
                 <div class="league-grid" id="leagues-grid">
                     <!-- Leagues injected here -->
                 </div>
-                <div class="actions-footer mt-8">
+                <div class="actions-footer mt-8 d-flex flex-column items-center gap-4">
                     <button id="show-create-league-btn" class="btn outline-pill">+ Add New League</button>
+
+                    <div class="sync-box mt-4 p-4 glass w-full max-w-sm"
+                        style="border-radius: 12px; border: 1px solid var(--border);">
+                        <p style="font-size: 0.6rem; font-weight: 800; margin-bottom: 8px;">JOIN EXISTING LEAGUE</p>
+                        <div class="d-flex gap-2">
+                            <input type="text" id="sync-input" placeholder="e.g. FF-123456"
+                                style="font-size: 0.8rem; flex: 1;">
+                            <button onclick="handleJoinCode()" class="btn primary py-2 px-4"
+                                style="font-size: 0.7rem;">JOIN</button>
+                        </div>
+                    </div>
+
                     <button id="logout-btn" class="btn text-link">Logout</button>
                 </div>
             </section>
