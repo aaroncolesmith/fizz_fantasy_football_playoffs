@@ -4,7 +4,7 @@
  */
 
 // --- Constants & Pool Data ---
-const VERSION = '1.7.0';
+const VERSION = '1.7.1';
 
 // Initialize Supabase (Using standard CDN global)
 const SUPABASE_URL = 'https://rchbzcfhnhshbvtjtfay.supabase.co';
@@ -149,13 +149,16 @@ async function loadFromCloud(syncId) {
                 if (event.event_data && Array.isArray(event.event_data.leagues)) {
                     event.event_data.leagues.forEach(inL => {
                         const existingIdx = state.leagues.findIndex(l => l.id === inL.id);
-                        const incomingPicks = inL.picks?.length || 0;
                         if (existingIdx === -1) {
                             state.leagues.push(inL);
                             changed = true;
                         } else {
+                            const incomingPicks = inL.picks?.length || 0;
                             const existingPicks = state.leagues[existingIdx].picks?.length || 0;
-                            if (incomingPicks > existingPicks) {
+                            const incomingDraftStarted = !!(inL.draftOrder && inL.draftOrder.length > 0);
+                            const existingDraftStarted = !!(state.leagues[existingIdx].draftOrder && state.leagues[existingIdx].draftOrder.length > 0);
+
+                            if (incomingPicks > existingPicks || (incomingDraftStarted && !existingDraftStarted)) {
                                 state.leagues[existingIdx] = inL;
                                 changed = true;
                             }
@@ -254,9 +257,11 @@ async function refreshGlobalState() {
                         const existing = latestLeaguesMap[l.id];
                         const incomingPicks = l.picks?.length || 0;
                         const existingPicks = existing?.picks?.length || 0;
+                        const incomingDraftStarted = !!(l.draftOrder && l.draftOrder.length > 0);
+                        const existingDraftStarted = !!(existing?.draftOrder && existing?.draftOrder.length > 0);
 
-                        // Merge Rule: Most picks wins. 
-                        if (!existing || incomingPicks > existingPicks) {
+                        // Merge Rule: Most picks wins, OR if draft just started
+                        if (!existing || incomingPicks > existingPicks || (incomingDraftStarted && !existingDraftStarted)) {
                             latestLeaguesMap[l.id] = l;
                         }
                     }
@@ -353,11 +358,14 @@ function subscribeToChanges() {
                 incomingLeagues.forEach(inL => {
                     const existingIndex = state.leagues.findIndex(l => l.id === inL.id);
                     const incomingPicks = inL.picks?.length || 0;
+                    const incomingDraftStarted = !!(inL.draftOrder && inL.draftOrder.length > 0);
 
                     if (existingIndex > -1) {
                         const existingPicks = state.leagues[existingIndex].picks?.length || 0;
-                        if (incomingPicks > existingPicks) {
-                            console.log(`✅ Updating League: ${inL.name} (${incomingPicks} picks)`);
+                        const existingDraftStarted = !!(state.leagues[existingIndex].draftOrder && state.leagues[existingIndex].draftOrder.length > 0);
+
+                        if (incomingPicks > existingPicks || (incomingDraftStarted && !existingDraftStarted)) {
+                            console.log(`✅ Updating League: ${inL.name} (Draft: ${incomingDraftStarted ? 'LIVE' : 'WAITING'})`);
                             state.leagues[existingIndex] = inL;
                             if (inL.id === state.currentLeagueId) changedVisible = true;
                         }
