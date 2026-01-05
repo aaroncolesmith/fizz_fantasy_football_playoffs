@@ -4,7 +4,7 @@
  */
 
 // --- Constants & Pool Data ---
-const VERSION = '3.0.5'; // Fixed Sync Merging
+const VERSION = '3.0.6'; // Fixed Team Count Sync
 
 // --- ESPN API Configuration ---
 const ESPN_STATS_URL = 'https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/2025/players?view=kona_player_info';
@@ -544,37 +544,27 @@ async function refreshGlobalState() {
                     const isMember = l.teams && l.teams.some(t => (t.name || '').toLowerCase() === normalizedUser);
 
                     if (isCreator || isMember) {
-                        foundAnything = true;
+        const latestLeaguesMap = {};
+        const leagueTimeMap = {}; // Track timestamps
                         const existing = latestLeaguesMap[l.id];
                         const incomingPicks = l.picks?.length || 0;
                         const existingPicks = existing?.picks?.length || 0;
-                        const incomingDraftStarted = !!(l.draftOrder && l.draftOrder.length > 0);
-                        const existingDraftStarted = !!(existing?.draftOrder && existing?.draftOrder.length > 0);
-
-                        // Merge Rule: Most picks wins, OR if draft just started
-                        if (!existing || incomingPicks > existingPicks || (incomingDraftStarted && !existingDraftStarted)) {
+        // Sort data by date to process newest first
+        allData.sort((a,b) => new Date(b.occurred_at) - new Date(a.occurred_at));
+        
+        allData.forEach(event => {
+            if (event.event_data && Array.isArray(event.event_data.leagues)) {
+                event.event_data.leagues.forEach(l => {
+                    const isCreator = (l.creator || '').toLowerCase() === normalizedUser;
+                    const isMember = l.teams && l.teams.some(t => (t.name || '').toLowerCase() === normalizedUser);
+                    if (isCreator || isMember) {
+                        foundAnything = true;
+                        if (!latestLeaguesMap[l.id]) {
                             latestLeaguesMap[l.id] = l;
                         }
                     }
                 });
             }
-            // Adopt the sync ID of the most recent event found that includes us
-            if (!CLOUD_SYNC_ID && event.game_code) {
-                CLOUD_SYNC_ID = event.game_code;
-                localStorage.setItem('ff_sync_id', CLOUD_SYNC_ID);
-            }
-        });
-
-        const allLeagues = Object.values(latestLeaguesMap);
-        if (allLeagues.length > 0) {
-            state.leagues = allLeagues;
-            localStorage.setItem(KEY_LEAGUES, JSON.stringify(state.leagues));
-            console.log(`🏆 Global Sync Complete: Found ${allLeagues.length} leagues.`);
-            updateUI();
-            return true;
-        }
-    } catch (e) {
-        console.warn("Global Refresh Failed", e);
     }
     return false;
 }
