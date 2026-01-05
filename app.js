@@ -173,32 +173,29 @@ async function refreshGlobalState() {
         if (error) throw error;
 
         if (data && data.length > 0) {
-            // We might have multiple states from different leagues. 
-            // We merge them or find the most recent ones.
-            // For now, let's collect all unique leagues across all state events.
-            let allLeagues = [];
-            let seenIds = new Set();
-
+            const latestLeaguesMap = {};
             data.forEach(event => {
                 if (event.event_data && Array.isArray(event.event_data.leagues)) {
                     event.event_data.leagues.forEach(l => {
-                        if (!seenIds.has(l.id)) {
-                            allLeagues.push(l);
-                            seenIds.add(l.id);
+                        const existing = latestLeaguesMap[l.id];
+                        const incomingPicks = l.picks?.length || 0;
+                        const existingPicks = existing?.picks?.length || 0;
+                        if (!existing || incomingPicks > existingPicks) {
+                            latestLeaguesMap[l.id] = l;
                         }
                     });
                 }
-                // If this event has a game_code, keep it as the primary sync ID if we don't have one
                 if (!CLOUD_SYNC_ID && event.game_code) {
                     CLOUD_SYNC_ID = event.game_code;
                     localStorage.setItem('ff_sync_id', CLOUD_SYNC_ID);
                 }
             });
 
+            const allLeagues = Object.values(latestLeaguesMap);
             if (allLeagues.length > 0) {
                 state.leagues = allLeagues;
                 localStorage.setItem(KEY_LEAGUES, JSON.stringify(state.leagues));
-                console.log(`Global Refresh: Found ${allLeagues.length} leagues.`);
+                console.log(`Global Refresh synced ${allLeagues.length} leagues.`);
                 return true;
             }
         }
@@ -256,23 +253,44 @@ function subscribeToChanges() {
             console.log('🚀 Realtime Update Received!', payload);
             if (payload.new && payload.new.event_data && Array.isArray(payload.new.event_data.leagues)) {
 
-                // Smart Merge: Only update if the incoming state is actually newer or different
-                // To keep it simple for now, we'll trust the latest insert.
-                state.leagues = payload.new.event_data.leagues;
-                localStorage.setItem(KEY_LEAGUES, JSON.stringify(state.leagues));
+                const incomingLeagues = payload.new.event_data.leagues;
+                let changedVisible = false;
 
-                if (!CLOUD_SYNC_ID && payload.new.game_code) {
-                    CLOUD_SYNC_ID = payload.new.game_code;
-                    localStorage.setItem('ff_sync_id', CLOUD_SYNC_ID);
+                incomingLeagues.forEach(inL => {
+                    const existingIndex = state.leagues.findIndex(l => l.id === inL.id);
+                    const incomingPicks = inL.picks?.length || 0;
+
+                    if (existingIndex > -1) {
+                        const existingPicks = state.leagues[existingIndex].picks?.length || 0;
+                        if (incomingPicks > existingPicks) {
+                            console.log(`✅ Updating League: ${inL.name} (${incomingPicks} picks)`);
+                            state.leagues[existingIndex] = inL;
+                            if (inL.id === state.currentLeagueId) changedVisible = true;
+                        }
+                    } else {
+                        // Check if we should join this league
+                        const normalizedUser = (state.currentUser || '').toLowerCase();
+                        if (inL.teams.some(t => t.name.toLowerCase() === normalizedUser) || inL.creator.toLowerCase() === normalizedUser) {
+                            console.log(`✨ Joined New League: ${inL.name}`);
+                            state.leagues.push(inL);
+                            changedVisible = true;
+                        }
+                    }
+                });
+
+                if (changedVisible) {
+                    localStorage.setItem(KEY_LEAGUES, JSON.stringify(state.leagues));
+                    updateUI();
                 }
 
-                updateUI();
+                // If on dashboard, refresh to show potential team changes
+                if (state.view === 'dashboard') renderLeagues();
 
-                // Visual feedback for the user
+                // Pulse the indicator
                 const badge = document.querySelector('.live-indicator');
                 if (badge) {
                     badge.style.background = '#00ff00';
-                    setTimeout(() => badge.style.background = '#4cd964', 500);
+                    setTimeout(() => badge.style.background = (syncStatus === 'SUBSCRIBED' ? '#4cd964' : '#ff3b30'), 500);
                 }
             }
         })
