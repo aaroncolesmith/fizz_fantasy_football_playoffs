@@ -4,7 +4,7 @@
  */
 
 // --- Constants & Pool Data ---
-const VERSION = '3.0.2'; // Added Slot Indicators & Clean Picks
+const VERSION = '3.0.4'; // Added Slot Indicators & Clean Picks
 
 // --- ESPN API Configuration ---
 const ESPN_STATS_URL = 'https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/2025/players?view=kona_player_info';
@@ -436,30 +436,31 @@ async function loadFromCloud(syncId) {
         if (error) throw error;
 
         if (data && data.length > 0) {
-            let changed = false;
+            let foundAny = false;
             data.forEach(event => {
                 if (event.event_data && Array.isArray(event.event_data.leagues)) {
                     event.event_data.leagues.forEach(inL => {
+                        foundAny = true;
                         const existingIdx = state.leagues.findIndex(l => l.id === inL.id);
                         if (existingIdx === -1) {
                             state.leagues.push(inL);
-                            changed = true;
                         } else {
                             const incomingPicks = inL.picks?.length || 0;
                             const existingPicks = state.leagues[existingIdx].picks?.length || 0;
                             const incomingDraftStarted = !!(inL.draftOrder && inL.draftOrder.length > 0);
                             const existingDraftStarted = !!(state.leagues[existingIdx].draftOrder && state.leagues[existingIdx].draftOrder.length > 0);
 
-                            if (incomingPicks > existingPicks || (incomingDraftStarted && !existingDraftStarted)) {
+                            // Always update if incoming has more picks or if draft just started
+                            if (incomingPicks >= existingPicks || (incomingDraftStarted && !existingDraftStarted)) {
                                 state.leagues[existingIdx] = inL;
-                                changed = true;
                             }
                         }
                     });
                 }
             });
 
-            if (changed) {
+            if (foundAny) {
+                // Link the ID even if no "new" data was found beyond what we have locally
                 CLOUD_SYNC_ID = id;
                 localStorage.setItem('ff_sync_id', id);
                 localStorage.setItem(KEY_LEAGUES, JSON.stringify(state.leagues));
