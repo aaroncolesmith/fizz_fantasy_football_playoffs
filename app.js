@@ -4,7 +4,7 @@
  */
 
 // --- Constants & Pool Data ---
-const VERSION = '2.9.2';
+const VERSION = '2.9.3';
 
 // --- ESPN API Configuration ---
 const ESPN_STATS_URL = 'https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/2025/players?view=kona_player_info';
@@ -173,7 +173,7 @@ const PLAYERS = [
     { id: 107, name: 'D\'Andre Swift', pos: 'RB', team: 'CHI', passTD: 0, rushTD: 9, recTD: 3, recs: 62 },
     { id: 108, name: 'Roschon Johnson', pos: 'RB', team: 'CHI', passTD: 0, rushTD: 4, recTD: 0, recs: 18 },
     { id: 109, name: 'Khalil Herbert', pos: 'RB', team: 'CHI', passTD: 0, rushTD: 2, recTD: 0, recs: 12 },
-    { id: 110, name: 'D.J. Moore', pos: 'WR', team: 'CHI', passTD: 0, rushTD: 0, recTD: 8, recs: 85 },
+    { id: 110, name: 'D.J. Moore', pos: 'WR', team: 'CHI', passTD: 0, rushTD: 0, recTD: 6, recs: 85, recYds: 671 },
     { id: 111, name: 'Rome Odunze', pos: 'WR', team: 'CHI', passTD: 0, rushTD: 0, recTD: 6, recs: 58 },
     { id: 112, name: 'Keenan Allen', pos: 'WR', team: 'CHI', passTD: 0, rushTD: 0, recTD: 5, recs: 65 },
     { id: 113, name: 'Tyler Scott', pos: 'WR', team: 'CHI', passTD: 0, rushTD: 0, recTD: 1, recs: 22 },
