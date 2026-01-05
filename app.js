@@ -4,7 +4,7 @@
  */
 
 // --- Constants & Pool Data ---
-const VERSION = '3.0.0'; // Comprehensive roster upgrade finalized
+const VERSION = '3.0.1'; // Removed Pickens (Trade to DAL)
 
 // --- ESPN API Configuration ---
 const ESPN_STATS_URL = 'https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/2025/players?view=kona_player_info';
@@ -115,7 +115,7 @@ const PLAYERS = [
     { id: 46, name: 'Kenneth Gainwell', pos: 'RB', team: 'PIT', passTD: 0, rushTD: 4, recTD: 3, recs: 48 },
     { id: 47, name: 'Cordarrelle Patterson', pos: 'RB', team: 'PIT', passTD: 0, rushTD: 2, recTD: 1, recs: 15 },
     { id: 48, name: 'DK Metcalf', pos: 'WR', team: 'PIT', passTD: 0, rushTD: 0, recTD: 6, recs: 72 },
-    { id: 49, name: 'George Pickens', pos: 'WR', team: 'PIT', passTD: 0, rushTD: 0, recTD: 5, recs: 65 },
+    // REMOVED: George Pickens PIT - traded to DAL (not in playoffs)
     { id: 50, name: 'Adam Thielen', pos: 'WR', team: 'PIT', passTD: 0, rushTD: 0, recTD: 4, recs: 58 },
     { id: 51, name: 'Van Jefferson', pos: 'WR', team: 'PIT', passTD: 0, rushTD: 0, recTD: 2, recs: 25 },
     { id: 52, name: 'Calvin Austin III', pos: 'WR', team: 'PIT', passTD: 0, rushTD: 0, recTD: 2, recs: 22 },
