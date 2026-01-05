@@ -4,7 +4,7 @@
  */
 
 // --- Constants & Pool Data ---
-const VERSION = '3.0.1'; // Removed Pickens (Trade to DAL)
+const VERSION = '3.0.2'; // Added Slot Indicators & Clean Picks
 
 // --- ESPN API Configuration ---
 const ESPN_STATS_URL = 'https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/2025/players?view=kona_player_info';
@@ -68,7 +68,7 @@ const PLAYERS = [
     { id: 177, name: 'Pat Bryant', pos: 'WR', team: 'DEN', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
     { id: 178, name: 'Jaleel McLaughlin', pos: 'RB', team: 'DEN', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
     { id: 179, name: 'Elijah Moore', pos: 'WR', team: 'DEN', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
-    { id: 180, name: 'Lil\'Jordan Humphrey', pos: 'WR', team: 'DEN', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
+    // REMOVED: Lil'Jordan Humphrey DEN - duplicate (id: 10)
     // AFC #2 - New England Patriots (NE)
     { id: 16, name: 'Drake Maye', pos: 'QB', team: 'NE', passTD: 28, rushTD: 6, recTD: 0, recs: 0 },
     { id: 17, name: 'Joshua Dobbs', pos: 'QB', team: 'NE', passTD: 3, rushTD: 2, recTD: 0, recs: 0 },
@@ -1379,11 +1379,21 @@ function renderPlayerList(l) {
         `;
 
         if (!isPicked && isMyTurn) {
-            const btn = document.createElement('button');
-            btn.className = 'btn primary btn-sm';
-            btn.innerText = `Pick ${pickNumTotal}`;
-            btn.onclick = () => draftPlayer(p.id);
-            tr.querySelector('.action-cell').appendChild(btn);
+            const team = l.teams.find(t => t.name.toLowerCase() === state.currentUser.toLowerCase());
+            const canDraft = team ? canDraftPosition(p, team.roster) : false;
+
+            if (canDraft) {
+                const btn = document.createElement('button');
+                btn.className = 'btn primary btn-sm';
+                btn.innerText = `Pick`;
+                btn.onclick = () => draftPlayer(p.id);
+                tr.querySelector('.action-cell').appendChild(btn);
+            } else {
+                const badge = document.createElement('span');
+                badge.className = 'badge-locked';
+                badge.innerText = 'SLOT FULL';
+                tr.querySelector('.action-cell').appendChild(badge);
+            }
         }
         tbody.appendChild(tr);
     });
@@ -1427,6 +1437,21 @@ function getTeamRosterMap(roster = []) {
     return map;
 }
 
+function canDraftPosition(player, roster) {
+    const currentRosterMap = getTeamRosterMap(roster);
+    if (player.pos === 'QB') {
+        return !currentRosterMap['QB'];
+    } else if (['RB', 'WR', 'TE'].includes(player.pos)) {
+        const slotsToCheck = [];
+        if (player.pos === 'RB') slotsToCheck.push('RB1', 'RB2');
+        if (player.pos === 'WR') slotsToCheck.push('WR1', 'WR2');
+        if (player.pos === 'TE') slotsToCheck.push('TE');
+        slotsToCheck.push('FLEX1', 'FLEX2');
+        return slotsToCheck.some(s => !currentRosterMap[s]);
+    }
+    return false;
+}
+
 window.draftPlayer = (playerId) => {
     const l = getActiveLeague();
     const picker = l.draftOrder[l.currentPick];
@@ -1435,24 +1460,7 @@ window.draftPlayer = (playerId) => {
     const player = PLAYERS.find(p => p.id === playerId);
     const team = l.teams.find(t => t.name === picker.name);
 
-    // Position Validation Logic
-    const currentRosterMap = getTeamRosterMap(team.roster);
-    let canDraft = false;
-
-    if (player.pos === 'QB') {
-        if (!currentRosterMap['QB']) canDraft = true;
-    } else if (['RB', 'WR', 'TE'].includes(player.pos)) {
-        // Check natural slots first, then FLEX
-        const slotsToCheck = [];
-        if (player.pos === 'RB') slotsToCheck.push('RB1', 'RB2');
-        if (player.pos === 'WR') slotsToCheck.push('WR1', 'WR2');
-        if (player.pos === 'TE') slotsToCheck.push('TE');
-        slotsToCheck.push('FLEX1', 'FLEX2');
-
-        canDraft = slotsToCheck.some(s => !currentRosterMap[s]);
-    }
-
-    if (!canDraft) {
+    if (!canDraftPosition(player, team.roster)) {
         alert(`NO SLOTS AVAILABLE FOR ${player.name} (${player.pos})`);
         return;
     }

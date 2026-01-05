@@ -802,6 +802,18 @@ input:focus {
     font-size: 0.75rem;
 }
 
+.badge-locked {
+    background: var(--gray-light);
+    color: var(--gray);
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    opacity: 0.6;
+    border: 1px solid var(--border);
+}
+
 @media (min-width: 768px) {
     .container {
         max-width: 800px;
