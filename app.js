@@ -4,7 +4,7 @@
  */
 
 // --- Constants & Pool Data ---
-const VERSION = '2.9.4';
+const VERSION = '3.0.0'; // Comprehensive roster upgrade finalized
 
 // --- ESPN API Configuration ---
 const ESPN_STATS_URL = 'https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/2025/players?view=kona_player_info';
@@ -65,6 +65,10 @@ const PLAYERS = [
     { id: 14, name: 'Adam Trautman', pos: 'TE', team: 'DEN', passTD: 0, rushTD: 0, recTD: 2, recs: 25 },
     { id: 15, name: 'Greg Dulcich', pos: 'TE', team: 'DEN', passTD: 0, rushTD: 0, recTD: 1, recs: 12 },
 
+    { id: 177, name: 'Pat Bryant', pos: 'WR', team: 'DEN', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
+    { id: 178, name: 'Jaleel McLaughlin', pos: 'RB', team: 'DEN', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
+    { id: 179, name: 'Elijah Moore', pos: 'WR', team: 'DEN', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
+    { id: 180, name: 'Lil\'Jordan Humphrey', pos: 'WR', team: 'DEN', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
     // AFC #2 - New England Patriots (NE)
     { id: 16, name: 'Drake Maye', pos: 'QB', team: 'NE', passTD: 28, rushTD: 6, recTD: 0, recs: 0 },
     { id: 17, name: 'Joshua Dobbs', pos: 'QB', team: 'NE', passTD: 3, rushTD: 2, recTD: 0, recs: 0 },
@@ -75,26 +79,34 @@ const PLAYERS = [
     // REMOVED: Stefon Diggs NE - duplicate, he's on HOU now (id: 63)
     { id: 23, name: 'DeMario Douglas', pos: 'WR', team: 'NE', passTD: 0, rushTD: 0, recTD: 4, recs: 68 },
     { id: 24, name: 'Ja\'Lynn Polk', pos: 'WR', team: 'NE', passTD: 0, rushTD: 0, recTD: 3, recs: 42 },
-    { id: 25, name: 'Kendrick Bourne', pos: 'WR', team: 'NE', passTD: 0, rushTD: 0, recTD: 2, recs: 30 },
+    // REMOVED: Kendrick Bourne NE - duplicate (moved to different team)
     { id: 26, name: 'Javon Baker', pos: 'WR', team: 'NE', passTD: 0, rushTD: 0, recTD: 1, recs: 15 },
     { id: 27, name: 'Kayshon Boutte', pos: 'WR', team: 'NE', passTD: 0, rushTD: 0, recTD: 1, recs: 12 },
     { id: 28, name: 'Hunter Henry', pos: 'TE', team: 'NE', passTD: 0, rushTD: 0, recTD: 6, recs: 58 },
     { id: 29, name: 'Austin Hooper', pos: 'TE', team: 'NE', passTD: 0, rushTD: 0, recTD: 2, recs: 22 },
 
+    { id: 181, name: 'Kyle Williams', pos: 'WR', team: 'NE', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
+    { id: 182, name: 'Efton Chism III', pos: 'WR', team: 'NE', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
+    { id: 183, name: 'Mack Hollins', pos: 'WR', team: 'NE', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
+    { id: 184, name: 'Elijah Mitchell', pos: 'RB', team: 'NE', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
     // AFC #3 - Jacksonville Jaguars (JAX)
     { id: 30, name: 'Trevor Lawrence', pos: 'QB', team: 'JAX', passTD: 26, rushTD: 9, recTD: 0, recs: 0 },
-    { id: 31, name: 'Mac Jones', pos: 'QB', team: 'JAX', passTD: 1, rushTD: 0, recTD: 0, recs: 0 },
+    // REMOVED: Mac Jones JAX - duplicate (moved to different team)
     { id: 32, name: 'Travis Etienne Jr.', pos: 'RB', team: 'JAX', passTD: 0, rushTD: 7, recTD: 3, recs: 52 },
-    { id: 33, name: 'Tank Bigsby', pos: 'RB', team: 'JAX', passTD: 0, rushTD: 4, recTD: 0, recs: 8 },
+    // REMOVED: Tank Bigsby JAX - duplicate (moved to different team)
     { id: 34, name: 'D\'Ernest Johnson', pos: 'RB', team: 'JAX', passTD: 0, rushTD: 1, recTD: 1, recs: 15 },
     { id: 35, name: 'Brian Thomas Jr.', pos: 'WR', team: 'JAX', passTD: 0, rushTD: 0, recTD: 9, recs: 65 },
-    { id: 36, name: 'Christian Kirk', pos: 'WR', team: 'JAX', passTD: 0, rushTD: 0, recTD: 5, recs: 78 },
-    { id: 37, name: 'Gabe Davis', pos: 'WR', team: 'JAX', passTD: 0, rushTD: 0, recTD: 6, recs: 48 },
+    // REMOVED: Christian Kirk JAX - duplicate (moved to different team)
+    // REMOVED: Gabe Davis JAX - duplicate (moved to different team)
     { id: 38, name: 'Parker Washington', pos: 'WR', team: 'JAX', passTD: 0, rushTD: 0, recTD: 4, recs: 55 },
     { id: 39, name: 'Jakobi Meyers', pos: 'WR', team: 'JAX', passTD: 0, rushTD: 0, recTD: 5, recs: 62 },
     { id: 40, name: 'Brenton Strange', pos: 'TE', team: 'JAX', passTD: 0, rushTD: 0, recTD: 3, recs: 32 },
     { id: 41, name: 'Luke Farrell', pos: 'TE', team: 'JAX', passTD: 0, rushTD: 0, recTD: 1, recs: 12 },
 
+    { id: 185, name: 'Bhayshul Tuten', pos: 'RB', team: 'JAX', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
+    { id: 186, name: 'Tim Patrick', pos: 'WR', team: 'JAX', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
+    { id: 187, name: 'Dyami Brown', pos: 'WR', team: 'JAX', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
+    { id: 188, name: 'Hunter Long', pos: 'TE', team: 'JAX', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
     // AFC #4 - Pittsburgh Steelers (PIT)
     { id: 42, name: 'Aaron Rodgers', pos: 'QB', team: 'PIT', passTD: 23, rushTD: 1, recTD: 0, recs: 0 },
     { id: 43, name: 'Justin Fields', pos: 'QB', team: 'PIT', passTD: 5, rushTD: 8, recTD: 0, recs: 0 },
@@ -113,6 +125,9 @@ const PLAYERS = [
     { id: 55, name: 'Connor Heyward', pos: 'TE', team: 'PIT', passTD: 0, rushTD: 0, recTD: 1, recs: 15 },
     { id: 57, name: 'Jonnu Smith', pos: 'TE', team: 'PIT', passTD: 0, rushTD: 0, recTD: 2, recs: 30, recYds: 220 },
 
+    { id: 189, name: 'Scotty Miller', pos: 'WR', team: 'PIT', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
+    { id: 190, name: 'Kaleb Johnson', pos: 'RB', team: 'PIT', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
+    { id: 191, name: 'Marquez Valdes-Scantling', pos: 'WR', team: 'PIT', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
     // AFC #5 - Houston Texans (HOU)
     { id: 56, name: 'C.J. Stroud', pos: 'QB', team: 'HOU', passTD: 28, rushTD: 2, recTD: 0, recs: 0 },
     { id: 57, name: 'Davis Mills', pos: 'QB', team: 'HOU', passTD: 1, rushTD: 0, recTD: 0, recs: 0 },
@@ -127,6 +142,15 @@ const PLAYERS = [
     { id: 66, name: 'Dalton Schultz', pos: 'TE', team: 'HOU', passTD: 0, rushTD: 0, recTD: 4, recs: 58 },
     { id: 67, name: 'Brevin Jordan', pos: 'TE', team: 'HOU', passTD: 0, rushTD: 0, recTD: 2, recs: 18 },
 
+    { id: 192, name: 'Jayden Higgins', pos: 'WR', team: 'HOU', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
+    { id: 193, name: 'Christian Kirk', pos: 'WR', team: 'HOU', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
+    { id: 194, name: 'Jaylin Noel', pos: 'WR', team: 'HOU', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
+    { id: 195, name: 'Jawhar Jordan', pos: 'RB', team: 'HOU', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
+    { id: 196, name: 'Nick Chubb', pos: 'RB', team: 'HOU', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
+    { id: 197, name: 'Cade Stover', pos: 'TE', team: 'HOU', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
+    { id: 198, name: 'Dare Ogunbowale', pos: 'RB', team: 'HOU', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
+    { id: 199, name: 'Braxton Berrios', pos: 'WR', team: 'HOU', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
+    { id: 200, name: 'Justin Watson', pos: 'WR', team: 'HOU', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
     // AFC #6 - Buffalo Bills (BUF)
     { id: 68, name: 'Josh Allen', pos: 'QB', team: 'BUF', passTD: 25, rushTD: 14, recTD: 0, recs: 0 },
     { id: 69, name: 'Mitchell Trubisky', pos: 'QB', team: 'BUF', passTD: 1, rushTD: 1, recTD: 0, recs: 0 },
@@ -136,11 +160,14 @@ const PLAYERS = [
     { id: 73, name: 'Khalil Shakir', pos: 'WR', team: 'BUF', passTD: 0, rushTD: 0, recTD: 4, recs: 75 },
     { id: 74, name: 'Keon Coleman', pos: 'WR', team: 'BUF', passTD: 0, rushTD: 0, recTD: 6, recs: 52 },
     { id: 75, name: 'Joshua Palmer', pos: 'WR', team: 'BUF', passTD: 0, rushTD: 0, recTD: 3, recs: 48 },
-    { id: 76, name: 'Mack Hollins', pos: 'WR', team: 'BUF', passTD: 0, rushTD: 0, recTD: 2, recs: 18 },
+    // REMOVED: Mack Hollins BUF - duplicate (moved to different team)
     { id: 77, name: 'Curtis Samuel', pos: 'WR', team: 'BUF', passTD: 0, rushTD: 1, recTD: 2, recs: 35 },
     { id: 78, name: 'Dalton Kincaid', pos: 'TE', team: 'BUF', passTD: 0, rushTD: 0, recTD: 5, recs: 72 },
     { id: 79, name: 'Dawson Knox', pos: 'TE', team: 'BUF', passTD: 0, rushTD: 0, recTD: 3, recs: 28 },
 
+    { id: 201, name: 'Brandin Cooks', pos: 'WR', team: 'BUF', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
+    { id: 202, name: 'Tyrell Shavers', pos: 'WR', team: 'BUF', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
+    { id: 203, name: 'Gabe Davis', pos: 'WR', team: 'BUF', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
     // AFC #7 - Los Angeles Chargers (LAC)
     { id: 80, name: 'Justin Herbert', pos: 'QB', team: 'LAC', passTD: 26, rushTD: 3, recTD: 0, recs: 0 },
     { id: 81, name: 'Easton Stick', pos: 'QB', team: 'LAC', passTD: 0, rushTD: 1, recTD: 0, recs: 0 },
@@ -156,6 +183,10 @@ const PLAYERS = [
     { id: 91, name: 'Will Dissly', pos: 'TE', team: 'LAC', passTD: 0, rushTD: 0, recTD: 1, recs: 18 },
     { id: 92, name: 'Hayden Hurst', pos: 'TE', team: 'LAC', passTD: 0, rushTD: 0, recTD: 1, recs: 12 },
 
+    { id: 204, name: 'Keenan Allen', pos: 'WR', team: 'LAC', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
+    { id: 205, name: 'Tre Harris', pos: 'WR', team: 'LAC', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
+    { id: 206, name: 'Tyler Conklin', pos: 'TE', team: 'LAC', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
+    { id: 207, name: 'KeAndre Lambert-Smith', pos: 'WR', team: 'LAC', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
     // NFC #1 - Seattle Seahawks (SEA)
     { id: 93, name: 'Sam Darnold', pos: 'QB', team: 'SEA', passTD: 35, rushTD: 4, recTD: 0, recs: 0 },
     { id: 94, name: 'Jalen Milroe', pos: 'QB', team: 'SEA', passTD: 2, rushTD: 5, recTD: 0, recs: 0 },
@@ -169,6 +200,8 @@ const PLAYERS = [
     { id: 103, name: 'Noah Fant', pos: 'TE', team: 'SEA', passTD: 0, rushTD: 0, recTD: 4, recs: 52 },
     { id: 104, name: 'AJ Barner', pos: 'TE', team: 'SEA', passTD: 0, rushTD: 0, recTD: 1, recs: 15 },
 
+    { id: 208, name: 'Rashid Shaheed', pos: 'WR', team: 'SEA', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
+    { id: 209, name: 'Drew Lock', pos: 'QB', team: 'SEA', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
     // NFC #2 - Chicago Bears (CHI)
     { id: 105, name: 'Caleb Williams', pos: 'QB', team: 'CHI', passTD: 25, rushTD: 6, recTD: 0, recs: 0 },
     { id: 106, name: 'Tyson Bagent', pos: 'QB', team: 'CHI', passTD: 1, rushTD: 1, recTD: 0, recs: 0 },
@@ -177,12 +210,18 @@ const PLAYERS = [
     { id: 109, name: 'Khalil Herbert', pos: 'RB', team: 'CHI', passTD: 0, rushTD: 2, recTD: 0, recs: 12 },
     { id: 110, name: 'D.J. Moore', pos: 'WR', team: 'CHI', passTD: 0, rushTD: 0, recTD: 6, recs: 85, recYds: 671 },
     { id: 111, name: 'Rome Odunze', pos: 'WR', team: 'CHI', passTD: 0, rushTD: 0, recTD: 6, recs: 58 },
-    { id: 112, name: 'Keenan Allen', pos: 'WR', team: 'CHI', passTD: 0, rushTD: 0, recTD: 5, recs: 65 },
+    // REMOVED: Keenan Allen CHI - duplicate (moved to different team)
     { id: 113, name: 'Tyler Scott', pos: 'WR', team: 'CHI', passTD: 0, rushTD: 0, recTD: 1, recs: 22 },
     { id: 114, name: 'Velus Jones Jr.', pos: 'WR', team: 'CHI', passTD: 0, rushTD: 1, recTD: 0, recs: 10 },
     { id: 115, name: 'Cole Kmet', pos: 'TE', team: 'CHI', passTD: 0, rushTD: 0, recTD: 6, recs: 72 },
     { id: 116, name: 'Gerald Everett', pos: 'TE', team: 'CHI', passTD: 0, rushTD: 0, recTD: 2, recs: 28 },
 
+    { id: 210, name: 'Luther Burden III', pos: 'WR', team: 'CHI', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
+    { id: 211, name: 'Kyle Monangai', pos: 'RB', team: 'CHI', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
+    { id: 212, name: 'Colston Loveland', pos: 'TE', team: 'CHI', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
+    { id: 213, name: 'Olamide Zaccheaus', pos: 'WR', team: 'CHI', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
+    { id: 214, name: 'Travis Homer', pos: 'RB', team: 'CHI', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
+    { id: 215, name: 'Devin Duvernay', pos: 'WR', team: 'CHI', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
     // NFC #3 - Philadelphia Eagles (PHI)
     { id: 117, name: 'Jalen Hurts', pos: 'QB', team: 'PHI', passTD: 25, rushTD: 8, recTD: 0, recs: 0 },
     // REMOVED: Kenny Pickett PHI - traded to LV Raiders (not a playoff team)
@@ -195,6 +234,12 @@ const PLAYERS = [
     { id: 125, name: 'Dallas Goedert', pos: 'TE', team: 'PHI', passTD: 0, rushTD: 0, recTD: 11, recs: 58 },
     { id: 126, name: 'Grant Calcaterra', pos: 'TE', team: 'PHI', passTD: 0, rushTD: 0, recTD: 1, recs: 15 },
 
+    { id: 216, name: 'Tank Bigsby', pos: 'RB', team: 'PHI', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
+    { id: 217, name: 'Will Shipley', pos: 'RB', team: 'PHI', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
+    { id: 218, name: 'Tanner McKee', pos: 'QB', team: 'PHI', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
+    { id: 219, name: 'Sam Howell', pos: 'QB', team: 'PHI', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
+    { id: 220, name: 'Darius Cooper', pos: 'WR', team: 'PHI', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
+    { id: 221, name: 'A.J. Dillon', pos: 'RB', team: 'PHI', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
     // NFC #4 - Carolina Panthers (CAR)
     { id: 127, name: 'Bryce Young', pos: 'QB', team: 'CAR', passTD: 21, rushTD: 2, recTD: 0, recs: 0 },
     { id: 128, name: 'Andy Dalton', pos: 'QB', team: 'CAR', passTD: 2, rushTD: 0, recTD: 0, recs: 0 },
@@ -209,6 +254,10 @@ const PLAYERS = [
     { id: 137, name: 'Tommy Tremble', pos: 'TE', team: 'CAR', passTD: 0, rushTD: 0, recTD: 3, recs: 35 },
     { id: 138, name: 'Ja\'Tavion Sanders', pos: 'TE', team: 'CAR', passTD: 0, rushTD: 0, recTD: 1, recs: 18 },
 
+    { id: 222, name: 'Rico Dowdle', pos: 'RB', team: 'CAR', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
+    { id: 223, name: 'Jalen Coker', pos: 'WR', team: 'CAR', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
+    { id: 224, name: 'Mitchell Evans', pos: 'TE', team: 'CAR', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
+    { id: 225, name: 'Jimmy Horn Jr.', pos: 'WR', team: 'CAR', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
     // NFC #5 - Los Angeles Rams (LAR)
     { id: 139, name: 'Matthew Stafford', pos: 'QB', team: 'LAR', passTD: 46, rushTD: 0, recTD: 0, recs: 0 },
     { id: 140, name: 'Jimmy Garoppolo', pos: 'QB', team: 'LAR', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
@@ -223,6 +272,11 @@ const PLAYERS = [
     { id: 149, name: 'Colby Parkinson', pos: 'TE', team: 'LAR', passTD: 0, rushTD: 0, recTD: 5, recs: 62 },
     { id: 150, name: 'Davis Allen', pos: 'TE', team: 'LAR', passTD: 0, rushTD: 0, recTD: 2, recs: 18 },
 
+    { id: 226, name: 'Tyler Higbee', pos: 'TE', team: 'LAR', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
+    { id: 227, name: 'Terrance Ferguson', pos: 'TE', team: 'LAR', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
+    { id: 228, name: 'Xavier Smith', pos: 'WR', team: 'LAR', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
+    { id: 229, name: 'Konata Mumpfield', pos: 'WR', team: 'LAR', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
+    { id: 230, name: 'Jarquez Hunter', pos: 'RB', team: 'LAR', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
     // NFC #6 - San Francisco 49ers (SF)
     { id: 151, name: 'Brock Purdy', pos: 'QB', team: 'SF', passTD: 30, rushTD: 3, recTD: 0, recs: 0 },
     // REMOVED: Josh Dobbs SF - duplicate, he's on NE now (id: 17)
@@ -238,6 +292,13 @@ const PLAYERS = [
     { id: 162, name: 'George Kittle', pos: 'TE', team: 'SF', passTD: 0, rushTD: 0, recTD: 9, recs: 82 },
     { id: 163, name: 'Eric Saubert', pos: 'TE', team: 'SF', passTD: 0, rushTD: 0, recTD: 1, recs: 12 },
 
+    { id: 231, name: 'Kendrick Bourne', pos: 'WR', team: 'SF', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
+    { id: 232, name: 'Kyle Juszczyk', pos: 'RB', team: 'SF', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
+    { id: 233, name: 'Demarcus Robinson', pos: 'WR', team: 'SF', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
+    { id: 234, name: 'Mac Jones', pos: 'QB', team: 'SF', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
+    { id: 235, name: 'Jordan James', pos: 'RB', team: 'SF', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
+    { id: 236, name: 'Skyy Moore', pos: 'WR', team: 'SF', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
+    { id: 237, name: 'Jordan Watkins', pos: 'WR', team: 'SF', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
     // NFC #7 - Green Bay Packers (GB)
     { id: 164, name: 'Jordan Love', pos: 'QB', team: 'GB', passTD: 23, rushTD: 2, recTD: 0, recs: 0 },
     { id: 165, name: 'Malik Willis', pos: 'QB', team: 'GB', passTD: 2, rushTD: 3, recTD: 0, recs: 0 },
@@ -251,7 +312,11 @@ const PLAYERS = [
     { id: 173, name: 'Bo Melton', pos: 'WR', team: 'GB', passTD: 0, rushTD: 0, recTD: 2, recs: 22 },
     { id: 174, name: 'Malik Heath', pos: 'WR', team: 'GB', passTD: 0, rushTD: 0, recTD: 1, recs: 15 },
     { id: 175, name: 'Luke Musgrave', pos: 'TE', team: 'GB', passTD: 0, rushTD: 0, recTD: 3, recs: 32 },
-    { id: 176, name: 'Tucker Kraft', pos: 'TE', team: 'GB', passTD: 0, rushTD: 0, recTD: 5, recs: 58 }
+    { id: 176, name: 'Tucker Kraft', pos: 'TE', team: 'GB', passTD: 0, rushTD: 0, recTD: 5, recs: 58 },
+    { id: 238, name: 'Matthew Golden', pos: 'WR', team: 'GB', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
+    { id: 239, name: 'Chris Brooks', pos: 'RB', team: 'GB', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
+    { id: 240, name: 'Damien Martinez', pos: 'RB', team: 'GB', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
+    { id: 241, name: 'Savion Williams', pos: 'WR', team: 'GB', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
 ];
 const SLOTS = ['QB', 'RB1', 'RB2', 'WR1', 'WR2', 'TE', 'FLEX1', 'FLEX2'];
 
