@@ -4,7 +4,7 @@
  */
 
 // --- Constants & Pool Data ---
-const VERSION = '2.8.0';
+const VERSION = '2.8.1';
 
 // --- ESPN API Configuration ---
 const ESPN_STATS_URL = 'https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/2025/players?view=kona_player_info';
@@ -183,7 +183,7 @@ const PLAYERS = [
 
     // NFC #3 - Philadelphia Eagles (PHI)
     { id: 117, name: 'Jalen Hurts', pos: 'QB', team: 'PHI', passTD: 25, rushTD: 8, recTD: 0, recs: 0 },
-    { id: 118, name: 'Kenny Pickett', pos: 'QB', team: 'PHI', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
+    // REMOVED: Kenny Pickett PHI - traded to LV Raiders (not a playoff team)
     { id: 119, name: 'Saquon Barkley', pos: 'RB', team: 'PHI', passTD: 0, rushTD: 12, recTD: 4, recs: 55 },
     // REMOVED: Kenneth Gainwell PHI - duplicate, he's on PIT now (id: 46)
     { id: 121, name: 'A.J. Brown', pos: 'WR', team: 'PHI', passTD: 0, rushTD: 0, recTD: 7, recs: 92 },
