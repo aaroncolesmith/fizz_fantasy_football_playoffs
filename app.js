@@ -4,7 +4,7 @@
  */
 
 // --- Constants & Pool Data ---
-const VERSION = '1.4.1';
+const VERSION = '1.5.0';
 
 // Initialize Supabase (Using standard CDN global)
 const SUPABASE_URL = 'https://rchbzcfhnhshbvtjtfay.supabase.co';
@@ -41,7 +41,13 @@ let state = {
     currentUser: localStorage.getItem(KEY_USER) || null,
     leagues: JSON.parse(localStorage.getItem(KEY_LEAGUES)) || [],
     currentLeagueId: null,
-    view: 'dashboard' // dashboard, new-league, league-detail, draft
+    view: 'dashboard',
+    search: '',
+    filters: {
+        pos: [],
+        team: [],
+        avail: ['undrafted']
+    }
 };
 
 // --- Helpers ---
@@ -379,32 +385,101 @@ function renderLeagueStats(l) {
 
 function renderDraftUI(l) {
     if (!l) return;
+    renderFilters(l);
     renderPlayerList(l);
     renderDraftOrder(l);
     renderRoster(l);
 }
 
-function renderPlayerList(l, search = '') {
+function renderFilters(l) {
+    const bar = document.getElementById('filter-bar');
+    if (!bar) return;
+
+    // Get unique teams from player pool
+    const teams = [...new Set(PLAYERS.map(p => p.team))].sort();
+    const positions = ['QB', 'RB', 'WR', 'TE', 'FLEX'];
+    const availability = ['undrafted', 'drafted'];
+
+    const isPosActive = (p) => state.filters.pos.includes(p);
+    const isTeamActive = (t) => state.filters.team.includes(t);
+    const isAvailActive = (a) => state.filters.avail.includes(a);
+
+    bar.innerHTML = `
+        <div class="filter-group">
+            <span class="filter-label">POS</span>
+            ${positions.map(p => `<div class="chip ${isPosActive(p) ? 'active' : ''}" onclick="toggleFilter('pos', '${p}')">${p}</div>`).join('')}
+        </div>
+        <div class="filter-group">
+            <span class="filter-label">TEAM</span>
+            ${teams.map(t => `<div class="chip ${isTeamActive(t) ? 'active' : ''}" onclick="toggleFilter('team', '${t}')">${t}</div>`).join('')}
+        </div>
+        <div class="filter-group">
+            <span class="filter-label">STATUS</span>
+            ${availability.map(a => `<div class="chip ${isAvailActive(a) ? 'active red' : ''}" onclick="toggleFilter('avail', '${a}')">${a.toUpperCase()}</div>`).join('')}
+        </div>
+    `;
+}
+
+window.toggleFilter = (cat, val) => {
+    const current = state.filters[cat];
+    if (current.includes(val)) {
+        state.filters[cat] = current.filter(v => v !== val);
+    } else {
+        state.filters[cat].push(val);
+    }
+    updateUI();
+};
+
+function renderPlayerList(l) {
     const c = document.getElementById('player-list');
     if (!c) return;
 
     const picked = l.picks.map(p => p.playerId);
-    const filtered = PLAYERS.filter(p => !picked.includes(p.id) &&
-        (p.name.toLowerCase().includes(search.toLowerCase()) || p.team.toLowerCase().includes(search.toLowerCase()))
-    );
+
+    // Filter the list
+    let filtered = PLAYERS.filter(p => {
+        const isPicked = picked.includes(p.id);
+
+        // 1. Availability Filter
+        const showDrafted = state.filters.avail.includes('drafted');
+        const showUndrafted = state.filters.avail.includes('undrafted');
+
+        if (!showDrafted && isPicked) return false;
+        if (!showUndrafted && !isPicked) return false;
+
+        // 2. Position Filter
+        if (state.filters.pos.length > 0) {
+            const flexPos = ['WR', 'RB', 'TE'];
+            const matchPos = state.filters.pos.some(f => {
+                if (f === 'FLEX') return flexPos.includes(p.pos);
+                return p.pos === f;
+            });
+            if (!matchPos) return false;
+        }
+
+        // 3. Team Filter
+        if (state.filters.team.length > 0) {
+            if (!state.filters.team.includes(p.team)) return false;
+        }
+
+        // 4. Search Filter
+        if (state.search && !p.name.toLowerCase().includes(state.search.toLowerCase())) return false;
+
+        return true;
+    });
 
     const currentPicker = l.draftOrder[l.currentPick];
     const isMyTurn = currentPicker && currentPicker.name.toLowerCase() === state.currentUser.toLowerCase();
 
     c.innerHTML = filtered.map(p => `
-        <div class="player-item">
+        <div class="player-item" style="${picked.includes(p.id) ? 'background: #fdf2f2; opacity: 0.8;' : ''}">
             <div>
-                <strong>${p.name}</strong><br>
+                <strong>${p.name}</strong> ${picked.includes(p.id) ? '<span style="color:var(--red); font-size: 0.6rem; font-weight: 800;">[PICKED]</span>' : ''}<br>
                 <small>${p.team} - ${p.pos}</small>
             </div>
-            ${isMyTurn ? `<button class="btn primary" style="padding: 6px 16px; border-radius: 8px; font-size: 0.7rem;" onclick="draftPlayer(${p.id})">PICK</button>` : ''}
+            ${isMyTurn && !picked.includes(p.id) ? `<button class="btn primary" style="padding: 6px 16px; border-radius: 8px; font-size: 0.7rem;" onclick="draftPlayer(${p.id})">PICK</button>` : ''}
         </div>
-    `).join('');
+    `).join('') || '<div class="p-8 text-center opacity-30">NO PLAYERS MATCH FILTERS</div>';
 }
 
 window.draftPlayer = (playerId) => {
@@ -570,8 +645,9 @@ function setupListeners() {
 
     // Draft
     document.getElementById('player-search').oninput = (e) => {
+        state.search = e.target.value;
         const l = getActiveLeague();
-        renderPlayerList(l, e.target.value);
+        renderPlayerList(l);
     };
 }
 

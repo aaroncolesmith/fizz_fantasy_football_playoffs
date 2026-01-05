@@ -261,6 +261,50 @@ body {
     font-weight: 800;
 }
 
+/* --- Filters --- */
+.filter-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+    align-items: center;
+}
+
+.filter-label {
+    font-size: 0.65rem;
+    font-weight: 800;
+    color: var(--gray);
+    text-transform: uppercase;
+    min-width: 80px;
+}
+
+.chip {
+    padding: 6px 12px;
+    border-radius: 50px;
+    border: 1.5px solid var(--border);
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+    background: white;
+    transition: all 0.2s;
+    user-select: none;
+}
+
+.chip:hover {
+    border-color: var(--text-black);
+}
+
+.chip.active {
+    background: var(--text-black);
+    color: white;
+    border-color: var(--text-black);
+}
+
+.chip.active.red {
+    background: var(--red);
+    border-color: var(--red);
+}
+
 /* --- Buttons & Forms --- */
 .btn {
     padding: 14px 28px;
