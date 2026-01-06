@@ -4,7 +4,7 @@
  */
 
 // --- Constants & Pool Data ---
-const VERSION = '5.2.0'; // Integrated Team Roster & Next Game View
+const VERSION = '5.2.1'; // Playoff vs Historical Stat Isolation
 const SYNC_EVENT_TYPE = 'FIZZ_V5_CLEAN';
 
 // --- ESPN API Configuration ---
@@ -701,26 +701,25 @@ async function syncStatsFromESPN() {
 
             if (ep) {
                 const pData = ep.player || ep;
-                // statSourceId 0 is actual, statSplitTypeId 0 is season total
                 const statsObj = pData.stats?.find(s => s.statSourceId === 0 && s.statSplitTypeId === 0)?.stats || {};
 
-                p.passYds = parseFloat(statsObj[STAT_MAP.passYds] || 0);
-                p.passTD = parseFloat(statsObj[STAT_MAP.passTD] || 0);
-                p.ints = parseFloat(statsObj[STAT_MAP.ints] || 0);
-                p.rushYds = parseFloat(statsObj[STAT_MAP.rushYds] || 0);
-                p.rushTD = parseFloat(statsObj[STAT_MAP.rushTD] || 0);
-                p.recs = parseFloat(statsObj[STAT_MAP.recs] || 0);
-                p.recYds = parseFloat(statsObj[STAT_MAP.recYds] || 0);
-                p.recTD = parseFloat(statsObj[STAT_MAP.recTD] || 0);
-                p.fumbles = parseFloat(statsObj[STAT_MAP.fumbles] || 0);
+                p.historicalStats = p.historicalStats || {};
+                p.historicalStats.passYds = parseFloat(statsObj[STAT_MAP.passYds] || 0);
+                p.historicalStats.passTD = parseFloat(statsObj[STAT_MAP.passTD] || 0);
+                p.historicalStats.ints = parseFloat(statsObj[STAT_MAP.ints] || 0);
+                p.historicalStats.rushYds = parseFloat(statsObj[STAT_MAP.rushYds] || 0);
+                p.historicalStats.rushTD = parseFloat(statsObj[STAT_MAP.rushTD] || 0);
+                p.historicalStats.recs = parseFloat(statsObj[STAT_MAP.recs] || 0);
+                p.historicalStats.recYds = parseFloat(statsObj[STAT_MAP.recYds] || 0);
+                p.historicalStats.recTD = parseFloat(statsObj[STAT_MAP.recTD] || 0);
+                p.historicalStats.fumbles = parseFloat(statsObj[STAT_MAP.fumbles] || 0);
 
-                // DISABLED: ESPN API returns garbage for 2pt conversions (e.g., Doubs showing 5, CMC showing 14)
-                // We will handle these via manual overrides or hardcoded player data
-                p.pass2pt = p.pass2pt || 0;
-                p.rush2pt = p.rush2pt || 0;
-                p.rec2pt = p.rec2pt || 0;
+                // Manual overrides for 2pt remains in historical if not already set
+                p.historicalStats.pass2pt = p.historicalStats.pass2pt || 0;
+                p.historicalStats.rush2pt = p.historicalStats.rush2pt || 0;
+                p.historicalStats.rec2pt = p.historicalStats.rec2pt || 0;
 
-                p.fantasyPts = calculateFantasyPoints(p);
+                p.historicalStats.fantasyPts = calculateFantasyPoints(p, true);
                 matches++;
             }
         });
@@ -732,62 +731,81 @@ async function syncStatsFromESPN() {
     }
 }
 
-function calculateFantasyPoints(p) {
+function calculateFantasyPoints(p, useHistorical = false) {
     const l = getActiveLeague();
     const s = l?.scoring || DEFAULT_SCORING;
+    const stats = useHistorical ? (p.historicalStats || {}) : p;
 
     let pts = 0;
-    pts += (p.passYds || 0) * (s.passYds || 0);
-    pts += (p.passTD || 0) * (s.passTD || 0);
-    pts += (p.ints || 0) * (s.ints || 0);
-    pts += (p.rushYds || 0) * (s.rushYds || 0);
-    pts += (p.rushTD || 0) * (s.rushTD || 0);
-    pts += (p.recs || 0) * (s.recs || 0);
-    pts += (p.recYds || 0) * (s.recYds || 0);
-    pts += (p.recTD || 0) * (s.recTD || 0);
-    pts += (p.fumbles || 0) * (s.fumbles || 0);
-    pts += (p.pass2pt || 0) * (s.pass2pt || 0);
-    pts += (p.rush2pt || 0) * (s.rush2pt || 0);
-    pts += (p.rec2pt || 0) * (s.rec2pt || 0);
+    pts += (stats.passYds || 0) * (s.passYds || 0);
+    pts += (stats.passTD || 0) * (s.passTD || 0);
+    pts += (stats.ints || 0) * (s.ints || 0);
+    pts += (stats.rushYds || 0) * (s.rushYds || 0);
+    pts += (stats.rushTD || 0) * (s.rushTD || 0);
+    pts += (stats.recs || 0) * (s.recs || 0);
+    pts += (stats.recYds || 0) * (s.recYds || 0);
+    pts += (stats.recTD || 0) * (s.recTD || 0);
+    pts += (stats.fumbles || 0) * (s.fumbles || 0);
+    pts += (stats.pass2pt || 0) * (s.pass2pt || 0);
+    pts += (stats.rush2pt || 0) * (s.rush2pt || 0);
+    pts += (stats.rec2pt || 0) * (s.rec2pt || 0);
 
     return parseFloat(pts.toFixed(2));
 }
 
-function getPointsBreakdown(p) {
+function getPointsBreakdown(p, useHistorical = false) {
     const l = getActiveLeague();
     const s = l?.scoring || DEFAULT_SCORING;
+    const stats = useHistorical ? (p.historicalStats || {}) : p;
     const lines = [];
 
     const check = (val, mult, label) => {
         if (val) lines.push(`${label}: ${val} * ${mult} = ${(val * mult).toFixed(2)}`);
     };
 
-    check(p.passYds, s.passYds, "Pass Yds");
-    check(p.passTD, s.passTD, "Pass TDs");
-    check(p.ints, s.ints, "Ints");
-    check(p.rushYds, s.rushYds, "Rush Yds");
-    check(p.rushTD, s.rushTD, "Rush TDs");
-    check(p.recs, s.recs, "Recs");
-    check(p.recYds, s.recYds, "Rec Yds");
-    check(p.recTD, s.recTD, "Rec TDs");
-    check(p.fumbles, s.fumbles, "Fumbles");
-    check(p.pass2pt, s.pass2pt, "Pass 2pt");
-    check(p.rush2pt, s.rush2pt, "Rush 2pt");
-    check(p.rec2pt, s.rec2pt, "Rec 2pt");
+    check(stats.passYds, s.passYds, "Pass Yds");
+    check(stats.passTD, s.passTD, "Pass TDs");
+    check(stats.ints, s.ints, "Ints");
+    check(stats.rushYds, s.rushYds, "Rush Yds");
+    check(stats.rushTD, s.rushTD, "Rush TDs");
+    check(stats.recs, s.recs, "Recs");
+    check(stats.recYds, s.recYds, "Rec Yds");
+    check(stats.recTD, s.recTD, "Rec TDs");
+    check(stats.fumbles, s.fumbles, "Fumbles");
+    check(stats.pass2pt, s.pass2pt, "Pass 2pt");
+    check(stats.rush2pt, s.rush2pt, "Rush 2pt");
+    check(stats.rec2pt, s.rec2pt, "Rec 2pt");
 
     return lines.length ? lines.join('\n') : "No points scored";
 }
 
 function normalizePlayers() {
     PLAYERS.forEach(p => {
-        p.passYds = p.passYds || 0; p.ints = p.ints || 0;
-        p.rushYds = p.rushYds || 0; p.recYds = p.recYds || 0;
-        p.fumbles = p.fumbles || 0;
-        // Preserving manual 2pt conversion overrides
-        p.pass2pt = p.pass2pt || 0;
-        p.rush2pt = p.rush2pt || 0;
-        p.rec2pt = p.rec2pt || 0;
-        p.fantasyPts = calculateFantasyPoints(p);
+        // 1. Initialize Historical Stats from existing hardcoded data (first boot)
+        if (!p.historicalStats) {
+            p.historicalStats = {
+                passYds: p.passYds || 0,
+                passTD: p.passTD || 0,
+                ints: p.ints || 0,
+                rushYds: p.rushYds || 0,
+                rushTD: p.rushTD || 0,
+                recs: p.recs || 0,
+                recYds: p.recYds || 0,
+                recTD: p.recTD || 0,
+                fumbles: p.fumbles || 0,
+                pass2pt: p.pass2pt || 0,
+                rush2pt: p.rush2pt || 0,
+                rec2pt: p.rec2pt || 0
+            };
+            p.historicalStats.fantasyPts = calculateFantasyPoints(p, true);
+        }
+
+        // 2. Zero out root properties (Playoff Stats)
+        p.passYds = 0; p.passTD = 0; p.ints = 0;
+        p.rushYds = 0; p.rushTD = 0; p.recs = 0;
+        p.recYds = 0; p.recTD = 0; p.fumbles = 0;
+        p.pass2pt = 0; p.rush2pt = 0; p.rec2pt = 0;
+        p.fantasyPts = 0;
     });
 }
 
@@ -953,9 +971,10 @@ function renderLeagueStats(l) {
     `;
 
     html += l.teams.map(t => {
+        // Team score is always based on Playoff Stats (root properties)
         const teamScore = t.roster.reduce((sum, rp) => {
             const p = PLAYERS.find(pp => pp.id === rp.id);
-            return sum + (p ? calculateFantasyPoints(p) : 0);
+            return sum + (p ? calculateFantasyPoints(p, false) : 0);
         }, 0);
 
         return `
@@ -1245,16 +1264,15 @@ function renderPlayerList(l) {
         return true;
     });
 
-    // Sorting Logic
+    // Sorting Logic Corrected
     filtered.sort((a, b) => {
-        let valA = a[state.sortCol] || 0;
-        let valB = b[state.sortCol] || 0;
+        const getVal = (obj, col) => {
+            if (col === 'fantasyPts') return calculateFantasyPoints(obj, true);
+            return (obj.historicalStats ? obj.historicalStats[col] : 0) || 0;
+        };
 
-        // Special case: fantasyPts needs to be calculated dynamically
-        if (state.sortCol === 'fantasyPts') {
-            valA = calculateFantasyPoints(a);
-            valB = calculateFantasyPoints(b);
-        }
+        let valA = getVal(a, state.sortCol);
+        let valB = getVal(b, state.sortCol);
 
         if (typeof valA === 'string') {
             valA = valA.toLowerCase();
@@ -1283,7 +1301,7 @@ function renderPlayerList(l) {
                         <th onclick="toggleSort('name')" style="cursor:pointer; min-width:160px; white-space:nowrap;">PLAYER ${getSortIcon('name')}</th>
                         <th onclick="toggleSort('team')" style="cursor:pointer; white-space:nowrap; padding: 0 10px;">TEAM ${getSortIcon('team')}</th>
                         <th onclick="toggleSort('pos')" style="cursor:pointer; white-space:nowrap; padding: 0 10px;">POS ${getSortIcon('pos')}</th>
-                        <th onclick="toggleSort('fantasyPts')" style="cursor:pointer; white-space:nowrap; padding: 0 10px;" class="${state.statTab === 'fantasyPts' ? 'active-col' : ''}">POINTS ${getSortIcon('fantasyPts')}</th>
+                        <th onclick="toggleSort('fantasyPts')" style="cursor:pointer; white-space:nowrap; padding: 0 10px;" class="${state.statTab === 'fantasyPts' ? 'active-col' : ''}">HIST. PTS ${getSortIcon('fantasyPts')}</th>
                         <th onclick="toggleSort('passYds')" style="cursor:pointer; white-space:nowrap; padding: 0 10px;" class="${state.statTab === 'passYds' ? 'active-col' : ''}">PASS YDS ${getSortIcon('passYds')}</th>
                         <th onclick="toggleSort('passTD')" style="cursor:pointer; white-space:nowrap; padding: 0 10px;" class="${state.statTab === 'passTD' ? 'active-col' : ''}">PASS TD ${getSortIcon('passTD')}</th>
                         <th onclick="toggleSort('rushYds')" style="cursor:pointer; white-space:nowrap; padding: 0 10px;" class="${state.statTab === 'rushYds' ? 'active-col' : ''}">RUSH YDS ${getSortIcon('rushYds')}</th>
@@ -1305,20 +1323,22 @@ function renderPlayerList(l) {
         const tr = document.createElement('tr');
         if (isPicked) tr.className = 'picked';
 
+        const hs = p.historicalStats || {};
+
         tr.innerHTML = `
             <td style="white-space:nowrap;"><div class="p-name">${p.name}</div></td>
             <td style="text-align:center; font-weight:800; color:var(--gray); padding: 0 10px;">${p.team}</td>
             <td style="text-align:center; font-weight:800; color:var(--gray); padding: 0 10px;">${p.pos}</td>
             <td class="stat-cell ${state.statTab === 'fantasyPts' ? 'active' : ''}" 
                 style="text-align:center; padding: 0 10px; color: var(--red); font-weight:bold; cursor:help;"
-                title="${getPointsBreakdown(p)}">${calculateFantasyPoints(p)}</td>
-            <td class="stat-cell ${state.statTab === 'passYds' ? 'active' : ''}" style="text-align:center; padding: 0 10px;">${Math.round(p.passYds || 0)}</td>
-            <td class="stat-cell ${state.statTab === 'passTD' ? 'active' : ''}" style="text-align:center; padding: 0 10px;">${p.passTD || 0}</td>
-            <td class="stat-cell ${state.statTab === 'rushYds' ? 'active' : ''}" style="text-align:center; padding: 0 10px;">${Math.round(p.rushYds || 0)}</td>
-            <td class="stat-cell ${state.statTab === 'rushTD' ? 'active' : ''}" style="text-align:center; padding: 0 10px;">${p.rushTD || 0}</td>
-            <td class="stat-cell ${state.statTab === 'recs' ? 'active' : ''}" style="text-align:center; padding: 0 10px;">${p.recs || 0}</td>
-            <td class="stat-cell ${state.statTab === 'recYds' ? 'active' : ''}" style="text-align:center; padding: 0 10px;">${Math.round(p.recYds || 0)}</td>
-            <td class="stat-cell ${state.statTab === 'recTD' ? 'active' : ''}" style="text-align:center; padding: 0 10px;">${p.recTD || 0}</td>
+                title="${getPointsBreakdown(p, true)}">${calculateFantasyPoints(p, true)}</td>
+            <td class="stat-cell ${state.statTab === 'passYds' ? 'active' : ''}" style="text-align:center; padding: 0 10px;">${Math.round(hs.passYds || 0)}</td>
+            <td class="stat-cell ${state.statTab === 'passTD' ? 'active' : ''}" style="text-align:center; padding: 0 10px;">${hs.passTD || 0}</td>
+            <td class="stat-cell ${state.statTab === 'rushYds' ? 'active' : ''}" style="text-align:center; padding: 0 10px;">${Math.round(hs.rushYds || 0)}</td>
+            <td class="stat-cell ${state.statTab === 'rushTD' ? 'active' : ''}" style="text-align:center; padding: 0 10px;">${hs.rushTD || 0}</td>
+            <td class="stat-cell ${state.statTab === 'recs' ? 'active' : ''}" style="text-align:center; padding: 0 10px;">${hs.recs || 0}</td>
+            <td class="stat-cell ${state.statTab === 'recYds' ? 'active' : ''}" style="text-align:center; padding: 0 10px;">${Math.round(hs.recYds || 0)}</td>
+            <td class="stat-cell ${state.statTab === 'recTD' ? 'active' : ''}" style="text-align:center; padding: 0 10px;">${hs.recTD || 0}</td>
             <td class="action-cell" style="padding: 10px 20px; text-align:right;"></td>
         `;
 
