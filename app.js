@@ -4,7 +4,7 @@
  */
 
 // --- Constants & Pool Data ---
-const VERSION = '3.1.1'; // Newest Universe Priority
+const VERSION = '4.0.0'; // Hard Reset - Clean Slate
 
 // --- ESPN API Configuration ---
 const ESPN_STATS_URL = 'https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/2025/players?view=kona_player_info';
@@ -46,7 +46,7 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const supabase = (window.supabase) ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
 
 // We use a "Local Mirror" of the cloud ID (Sync Code)
-let CLOUD_SYNC_ID = localStorage.getItem('ff_sync_id') || null; if (CLOUD_SYNC_ID === 'FF-904572') CLOUD_SYNC_ID = null;
+let CLOUD_SYNC_ID = localStorage.getItem('ff_sync_id') || null;
 const PLAYERS = [
     // AFC #1 - Denver Broncos (DEN)
     { id: 1, name: 'Bo Nix', pos: 'QB', team: 'DEN', passTD: 25, rushTD: 4, recTD: 0, recs: 0 },
