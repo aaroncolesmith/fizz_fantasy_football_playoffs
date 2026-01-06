@@ -4,7 +4,7 @@
  */
 
 // --- Constants & Pool Data ---
-const VERSION = '5.0.0'; // Hard Reset - Clean Slate
+const VERSION = '5.1.0'; // One Code Per League
 const SYNC_EVENT_TYPE = 'FIZZ_V5_CLEAN';
 
 // --- ESPN API Configuration ---
@@ -47,7 +47,7 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const supabase = (window.supabase) ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
 
 // We use a "Local Mirror" of the cloud ID (Sync Code)
-let CLOUD_SYNC_ID = localStorage.getItem('ff_sync_id') || null;
+// Persistence handled via state.leagues[i].syncCode
 const PLAYERS = [
     // AFC #1 - Denver Broncos (DEN)
     { id: 1, name: 'Bo Nix', pos: 'QB', team: 'DEN', passTD: 25, rushTD: 4, recTD: 0, recs: 0 },
@@ -358,118 +358,69 @@ function isAdmin() {
 window.saveSession = async function () {
     localStorage.setItem(KEY_USER, state.currentUser || '');
     localStorage.setItem(KEY_LEAGUES, JSON.stringify(state.leagues));
-    if (CLOUD_SYNC_ID) localStorage.setItem('ff_sync_id', CLOUD_SYNC_ID);
 
-    // Cloud Sync logic via Supabase
-    if (state.leagues.length > 0 && supabase) {
-        if (!CLOUD_SYNC_ID) {
-            // First time: Create the cloud entry
-            console.log("No Sync ID. Bootstrapping Supabase...");
-            await createCloudSync();
-        } else {
-            console.log("Syncing state to Supabase ID:", CLOUD_SYNC_ID);
-            try {
-                const { error } = await supabase
-                    .from('play_events')
-                    .insert({
-                        game_code: CLOUD_SYNC_ID,
-                        hand_number: 999, // Reserved for state sync
-                        event_type: SYNC_EVENT_TYPE,
-                        event_data: { leagues: state.leagues },
-                        player_name: state.currentUser,
-                        occurred_at: new Date().toISOString()
-                    });
+    if (!supabase) return;
 
-                if (error) throw error;
-                console.log("Cloud Sync Successful");
-                updateUI();
-            } catch (e) {
-                console.warn("Cloud Sync Failed", e);
-            }
+    for (let l of state.leagues) {
+        if (!l.syncCode) {
+            l.syncCode = 'FF-' + Math.floor(100000 + Math.random() * 900000);
+        }
+
+        console.log(`📡 Syncing League [${l.name}] to Cloud Code: ${l.syncCode}`);
+        try {
+            const { error } = await supabase
+                .from('play_events')
+                .insert({
+                    game_code: l.syncCode,
+                    hand_number: 999,
+                    event_type: SYNC_EVENT_TYPE,
+                    event_data: { leagues: [l] },
+                    player_name: state.currentUser,
+                    occurred_at: new Date().toISOString()
+                });
+
+            if (error) throw error;
+        } catch (e) {
+            console.warn(`Cloud Sync Failed for ${l.name}`, e);
         }
     }
+    updateUI();
 };
 
-async function createCloudSync() {
-    if (!supabase) return null;
-    try {
-        // Generate a simple human-readable 6-digit sync code
-        const code = 'FF-' + Math.floor(100000 + Math.random() * 900000);
-        CLOUD_SYNC_ID = code;
-        localStorage.setItem('ff_sync_id', CLOUD_SYNC_ID);
-
-        // Push initial state
-        const { error } = await supabase
-            .from('play_events')
-            .insert({
-                game_code: CLOUD_SYNC_ID,
-                hand_number: 999,
-                event_type: SYNC_EVENT_TYPE,
-                event_data: { leagues: state.leagues },
-                player_name: state.currentUser,
-                occurred_at: new Date().toISOString()
-            });
-
-        if (error) throw error;
-        console.log("Created Cloud Sync ID:", CLOUD_SYNC_ID);
-        updateUI();
-        return CLOUD_SYNC_ID;
-    } catch (e) {
-        console.error("Failed to create Supabase sync", e);
-        return null;
-    }
-}
-
 async function loadFromCloud(syncId) {
-    const id = syncId || CLOUD_SYNC_ID;
-    if (!id || !supabase) return false;
+    if (!syncId || !supabase) return false;
 
-    console.log("📥 Loading from Cloud Code:", id);
+    console.log("📥 Attempting to Join via Code:", syncId);
     try {
         const { data, error } = await supabase
             .from('play_events')
             .select('*')
-            .eq('game_code', id)
+            .eq('game_code', syncId)
             .eq('event_type', SYNC_EVENT_TYPE)
             .order('occurred_at', { ascending: false })
-            .limit(10);
+            .limit(1);
 
         if (error) throw error;
 
         if (data && data.length > 0) {
-            let foundAny = false;
-            const processedLeagues = new Set();
-            data.forEach(event => {
-                if (event.event_data && Array.isArray(event.event_data.leagues)) {
-                    event.event_data.leagues.forEach(inL => {
-                        foundAny = true;
-                        if (!processedLeagues.has(inL.id)) {
-                            const existingIdx = state.leagues.findIndex(l => l.id === inL.id);
-                            if (existingIdx === -1) {
-                                state.leagues.push(inL);
-                            } else {
-                                const incomingPicks = inL.picks ? inL.picks.length : 0;
-                                const existingPicks = state.leagues[existingIdx].picks ? state.leagues[existingIdx].picks.length : 0;
-                                if (incomingPicks >= existingPicks) {
-                                    state.leagues[existingIdx] = inL;
-                                }
-                            }
-                            processedLeagues.add(inL.id);
-                        }
-                    });
+            const leagueData = data[0].event_data.leagues[0];
+            if (leagueData) {
+                leagueData.syncCode = syncId;
+                const existingIdx = state.leagues.findIndex(l => l.id === leagueData.id);
+                if (existingIdx === -1) {
+                    state.leagues.push(leagueData);
+                    console.log("✅ Joined New League:", leagueData.name);
+                } else {
+                    state.leagues[existingIdx] = leagueData;
+                    console.log("✅ Updated Existing League:", leagueData.name);
                 }
-            });
-            if (foundAny) {
-                CLOUD_SYNC_ID = id;
-                localStorage.setItem('ff_sync_id', id);
                 localStorage.setItem(KEY_LEAGUES, JSON.stringify(state.leagues));
-                console.log("✅ Cloud Sync Success for", id);
                 updateUI();
                 return true;
             }
         }
     } catch (e) {
-        console.warn("❌ Cloud Pull Failed", e);
+        console.warn("❌ Cloud Join Failed", e);
     }
     return false;
 }
@@ -555,10 +506,7 @@ async function refreshGlobalState() {
                 });
             }
             // Adopt the sync ID of the absolute most recent event found that includes us
-            if (!CLOUD_SYNC_ID && event.game_code && foundAnything) {
-                CLOUD_SYNC_ID = event.game_code;
-                localStorage.setItem('ff_sync_id', CLOUD_SYNC_ID);
-            }
+            // Sync Code is now handled per-league inside event_data
         });
 
         const allLeagues = Object.values(latestLeaguesMap);
@@ -596,17 +544,19 @@ window.forceCloudSync = async function () {
     if (btn) btn.innerText = 'Force Cloud Sync';
 }
 
-window.copyLeagueCode = function (e) {
+window.copyLeagueCode = function (e, code) {
     if (e) e.stopPropagation();
-    if (!CLOUD_SYNC_ID) return;
-    navigator.clipboard.writeText(CLOUD_SYNC_ID).then(() => {
+    const val = code || e.target.closest('.sync-code-badge')?.innerText?.split('[')[0]?.trim();
+    if (!val) return;
+
+    navigator.clipboard.writeText(val).then(() => {
         const btn = e?.target;
-        if (btn && btn.tagName === 'BUTTON') {
+        if (btn && (btn.tagName === 'BUTTON' || btn.tagName === 'SPAN')) {
             const originalText = btn.innerText;
             btn.innerText = 'COPIED!';
             setTimeout(() => btn.innerText = originalText, 2000);
         } else {
-            alert("LEAGUE CODE COPIED TO CLIPBOARD!");
+            alert("LEAGUE CODE COPIED!");
         }
     });
 };
@@ -674,10 +624,7 @@ function subscribeToChanges() {
 
                 if (changedVisible) {
                     // If we just got an update for a league we care about, sync our global ID to match if we haven't yet
-                    if (!CLOUD_SYNC_ID && payload.new.game_code) {
-                        CLOUD_SYNC_ID = payload.new.game_code;
-                        localStorage.setItem('ff_sync_id', CLOUD_SYNC_ID);
-                    }
+                    // Sync Code is now handled per-league
                     localStorage.setItem(KEY_LEAGUES, JSON.stringify(state.leagues));
                     updateUI();
                 }
@@ -929,14 +876,14 @@ function renderLeagues() {
                 <h3>${l.name}</h3>
                 <p>${l.teams.length} Teams</p>
                 <div class="mt-4" onclick="event.stopPropagation()">
-                    ${CLOUD_SYNC_ID ? `
+                    ${l.syncCode ? `
                         <button onclick="toggleLeagueCode(event)" class="btn-mini" style="opacity: 0.3; border:none; background:transparent;">Show Code</button>
                         <div class="league-code-container sync-code-badge hidden" style="margin-top:4px;">
-                            <span>${CLOUD_SYNC_ID}</span>
-                            <button onclick="window.copyLeagueCode(event)" class="btn-mini text-link" style="padding:0; margin-left:8px; font-size:0.6rem;">[COPY]</button>
+                            <span>${l.syncCode}</span>
+                            <button onclick="window.copyLeagueCode(event, '${l.syncCode}')" class="btn-mini text-link" style="padding:0; margin-left:8px; font-size:0.6rem;">[COPY]</button>
                         </div>
                     ` : `
-                        <span style="font-size:0.6rem; color:var(--red); font-weight:800;">OFFLINE</span>
+                        <span style="font-size:0.6rem; color:var(--red); font-weight:800;">SYNCING...</span>
                     `}
                 </div>
             </div>
@@ -954,15 +901,15 @@ function renderLeagueStats(l) {
                 ${l.name}
                 <div class="live-indicator" style="width: 8px; height: 8px; border-radius: 50%; background: ${syncStatus === 'SUBSCRIBED' ? '#4cd964' : '#ff3b30'};"></div>
             </h2>
-            ${CLOUD_SYNC_ID ? `
+                ${l.syncCode ? `
                 <div style="text-align:right;">
                     <button onclick="toggleLeagueCode(event)" class="btn-mini" style="opacity: 0.3; border:none; background:transparent;">Show Code</button>
-                    <div class="league-code-container sync-code-badge hidden" style="margin-top:0; font-size:0.7rem;">
-                        <span>CODE: ${CLOUD_SYNC_ID}</span>
-                        <button onclick="window.copyLeagueCode(event)" class="btn-mini text-link" style="padding:0; margin-left:8px; font-size:0.6rem;">[COPY]</button>
+                    <div class="league-code-container sync-code-badge hidden" style="margin-top:4px;">
+                        <span>${l.syncCode}</span>
+                        <button onclick="window.copyLeagueCode(event, '${l.syncCode}')" class="btn-mini text-link" style="padding:0; margin-left:8px; font-size:0.6rem;">[COPY]</button>
                     </div>
                 </div>
-            ` : ''}
+                ` : ''}
         </div>
         <div class="table-row table-header">
             <div>TEAM</div>
@@ -1900,7 +1847,6 @@ function updateDebugInfo() {
 
     c.innerHTML = `
         <div class="mb-2"><strong>VER:</strong> ${VERSION}</div>
-        <div class="mb-2"><strong>SYNC CODE:</strong> <span style="color:var(--red); font-weight:800;">${CLOUD_SYNC_ID || 'PENDING'}</span></div>
         <div class="mb-2"><strong>LEAGUES:</strong> ${state.leagues.length}</div>
         <div class="mb-4"><strong>AUTH:</strong> ${[...new Set(users)].join(', ') || 'NONE'}</div>
         <button id="debug-force-sync" onclick="forceCloudSync()" class="btn primary p-2 w-full" style="font-size: 0.6rem;">Force Cloud Sync</button>
