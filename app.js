@@ -4,7 +4,7 @@
  */
 
 // --- Constants & Pool Data ---
-const VERSION = '5.1.0'; // One Code Per League
+const VERSION = '5.1.1'; // One Code Per League Fix
 const SYNC_EVENT_TYPE = 'FIZZ_V5_CLEAN';
 
 // --- ESPN API Configuration ---
@@ -790,6 +790,13 @@ async function initApp() {
     // 2. Setup Realtime Subscription
     if (supabase) {
         subscribeToChanges();
+    }
+
+    // 3. Migration: If any league is missing a sync code, generate and save now
+    const needsMigration = state.leagues.some(l => !l.syncCode);
+    if (needsMigration) {
+        console.log("🛠 Migrating legacy leagues to unique sync codes...");
+        await saveSession();
     }
 
     if (!state.currentUser) {
