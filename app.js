@@ -5,6 +5,7 @@
 
 // --- Constants & Pool Data ---
 const VERSION = '4.0.0'; // Hard Reset - Clean Slate
+const SYNC_EVENT_TYPE = 'FIZZYFEST_V4_STATE';
 
 // --- ESPN API Configuration ---
 const ESPN_STATS_URL = 'https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/2025/players?view=kona_player_info';
@@ -373,7 +374,7 @@ window.saveSession = async function () {
                     .insert({
                         game_code: CLOUD_SYNC_ID,
                         hand_number: 999, // Reserved for state sync
-                        event_type: 'FIZZYFEST_STATE',
+                        event_type: SYNC_EVENT_TYPE,
                         event_data: { leagues: state.leagues },
                         player_name: state.currentUser,
                         occurred_at: new Date().toISOString()
@@ -429,7 +430,7 @@ async function loadFromCloud(syncId) {
             .from('play_events')
             .select('*')
             .eq('game_code', id)
-            .eq('event_type', 'FIZZYFEST_STATE')
+            .eq('event_type', SYNC_EVENT_TYPE)
             .order('occurred_at', { ascending: false })
             .limit(10);
 
@@ -513,14 +514,14 @@ async function refreshGlobalState() {
             supabase
                 .from('play_events')
                 .select('*')
-                .eq('event_type', 'FIZZYFEST_STATE')
+                .eq('event_type', SYNC_EVENT_TYPE)
                 .eq('player_name', username)
                 .order('occurred_at', { ascending: false })
                 .limit(50),
             supabase
                 .from('play_events')
                 .select('*')
-                .eq('event_type', 'FIZZYFEST_STATE')
+                .eq('event_type', SYNC_EVENT_TYPE)
                 .order('occurred_at', { ascending: false })
                 .limit(200)
         ]);
@@ -638,7 +639,7 @@ function subscribeToChanges() {
             event: 'INSERT',
             schema: 'public',
             table: 'play_events',
-            filter: 'event_type=eq.FIZZYFEST_STATE'
+            filter: 'event_type=eq.' + SYNC_EVENT_TYPE
         }, payload => {
             console.log('🚀 Realtime Update Received!', payload);
             if (payload.new && payload.new.event_data && Array.isArray(payload.new.event_data.leagues)) {
