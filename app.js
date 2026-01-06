@@ -77,7 +77,7 @@ const PLAYERS = [
     { id: 19, name: 'TreVeyon Henderson', pos: 'RB', team: 'NE', passTD: 0, rushTD: 11, recTD: 1, recs: 28 },
     { id: 20, name: 'Antonio Gibson', pos: 'RB', team: 'NE', passTD: 0, rushTD: 3, recTD: 1, recs: 35 },
     { id: 21, name: 'JaMycal Hasty', pos: 'RB', team: 'NE', passTD: 0, rushTD: 1, recTD: 0, recs: 12 },
-    // REMOVED: Stefon Diggs NE - duplicate, he's on HOU now (id: 63)
+    { id: 63, name: 'Stefon Diggs', pos: 'WR', team: 'NE', passTD: 0, rushTD: 0, recTD: 7, recs: 95 },
     { id: 23, name: 'DeMario Douglas', pos: 'WR', team: 'NE', passTD: 0, rushTD: 0, recTD: 4, recs: 68 },
     { id: 24, name: 'Ja\'Lynn Polk', pos: 'WR', team: 'NE', passTD: 0, rushTD: 0, recTD: 3, recs: 42 },
     // REMOVED: Kendrick Bourne NE - duplicate (moved to different team)
@@ -137,7 +137,6 @@ const PLAYERS = [
     { id: 60, name: 'Dameon Pierce', pos: 'RB', team: 'HOU', passTD: 0, rushTD: 3, recTD: 0, recs: 12 },
     { id: 61, name: 'Nico Collins', pos: 'WR', team: 'HOU', passTD: 0, rushTD: 0, recTD: 6, recs: 88 },
     { id: 62, name: 'Tank Dell', pos: 'WR', team: 'HOU', passTD: 0, rushTD: 1, recTD: 5, recs: 62 },
-    { id: 63, name: 'Stefon Diggs', pos: 'WR', team: 'HOU', passTD: 0, rushTD: 0, recTD: 7, recs: 95 },
     { id: 64, name: 'John Metchie III', pos: 'WR', team: 'HOU', passTD: 0, rushTD: 0, recTD: 2, recs: 32 },
     { id: 65, name: 'Xavier Hutchinson', pos: 'WR', team: 'HOU', passTD: 0, rushTD: 0, recTD: 1, recs: 22 },
     { id: 66, name: 'Dalton Schultz', pos: 'TE', team: 'HOU', passTD: 0, rushTD: 0, recTD: 4, recs: 58 },
