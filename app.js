@@ -4,7 +4,7 @@
  */
 
 // --- Constants & Pool Data ---
-const VERSION = '5.1.2'; // 2pt Conversion Fix
+const VERSION = '5.1.3'; // Stat Accuracy & 2pt Correction
 const SYNC_EVENT_TYPE = 'FIZZ_V5_CLEAN';
 
 // --- ESPN API Configuration ---
@@ -281,7 +281,7 @@ const PLAYERS = [
     // NFC #6 - San Francisco 49ers (SF)
     { id: 151, name: 'Brock Purdy', pos: 'QB', team: 'SF', passTD: 30, rushTD: 3, recTD: 0, recs: 0 },
     // REMOVED: Josh Dobbs SF - duplicate, he's on NE now (id: 17)
-    { id: 153, name: 'Christian McCaffrey', pos: 'RB', team: 'SF', passTD: 0, rushTD: 12, recTD: 8, recs: 95 },
+    { id: 153, name: 'Christian McCaffrey', pos: 'RB', team: 'SF', passTD: 0, rushTD: 0, recTD: 0, recs: 15, rushYds: 216, recYds: 194 },
     { id: 154, name: 'Brian Robinson Jr.', pos: 'RB', team: 'SF', passTD: 0, rushTD: 7, recTD: 1, recs: 22 },
     { id: 155, name: 'Isaac Guerendo', pos: 'RB', team: 'SF', passTD: 0, rushTD: 4, recTD: 0, recs: 12 },
     { id: 156, name: 'Jordan Mason', pos: 'RB', team: 'SF', passTD: 0, rushTD: 3, recTD: 0, recs: 10 },
@@ -307,7 +307,7 @@ const PLAYERS = [
     { id: 167, name: 'Emanuel Wilson', pos: 'RB', team: 'GB', passTD: 0, rushTD: 3, recTD: 0, recs: 15 },
     { id: 168, name: 'MarShawn Lloyd', pos: 'RB', team: 'GB', passTD: 0, rushTD: 2, recTD: 0, recs: 10 },
     { id: 169, name: 'Christian Watson', pos: 'WR', team: 'GB', passTD: 0, rushTD: 0, recTD: 6, recs: 42 },
-    { id: 170, name: 'Romeo Doubs', pos: 'WR', team: 'GB', passTD: 0, rushTD: 0, recTD: 5, recs: 62 },
+    { id: 170, name: 'Romeo Doubs', pos: 'WR', team: 'GB', passTD: 0, rushTD: 0, recTD: 5, recs: 62, rec2pt: 1 },
     { id: 171, name: 'Jayden Reed', pos: 'WR', team: 'GB', passTD: 0, rushTD: 2, recTD: 4, recs: 75 },
     { id: 172, name: 'Dontayvion Wicks', pos: 'WR', team: 'GB', passTD: 0, rushTD: 0, recTD: 4, recs: 38 },
     { id: 173, name: 'Bo Melton', pos: 'WR', team: 'GB', passTD: 0, rushTD: 0, recTD: 2, recs: 22 },
@@ -695,10 +695,11 @@ async function syncStatsFromESPN() {
                 p.recTD = parseFloat(statsObj[STAT_MAP.recTD] || 0);
                 p.fumbles = parseFloat(statsObj[STAT_MAP.fumbles] || 0);
 
-                // Re-enabling 2pt conversions based on user feedback
-                p.pass2pt = parseFloat(statsObj[STAT_MAP.pass2pt] || 0);
-                p.rush2pt = parseFloat(statsObj[STAT_MAP.rush2pt] || 0);
-                p.rec2pt = parseFloat(statsObj[STAT_MAP.rec2pt] || 0);
+                // DISABLED: ESPN API returns garbage for 2pt conversions (e.g., Doubs showing 5, CMC showing 14)
+                // We will handle these via manual overrides or hardcoded player data
+                p.pass2pt = p.pass2pt || 0;
+                p.rush2pt = p.rush2pt || 0;
+                p.rec2pt = p.rec2pt || 0;
 
                 p.fantasyPts = calculateFantasyPoints(p);
                 matches++;
@@ -763,10 +764,10 @@ function normalizePlayers() {
         p.passYds = p.passYds || 0; p.ints = p.ints || 0;
         p.rushYds = p.rushYds || 0; p.recYds = p.recYds || 0;
         p.fumbles = p.fumbles || 0;
-        // Initialize ALL 2pt conversions to 0 - will be populated by ESPN API sync
-        p.pass2pt = 0;
-        p.rush2pt = 0;
-        p.rec2pt = 0;
+        // Preserving manual 2pt conversion overrides
+        p.pass2pt = p.pass2pt || 0;
+        p.rush2pt = p.rush2pt || 0;
+        p.rec2pt = p.rec2pt || 0;
         p.fantasyPts = calculateFantasyPoints(p);
     });
 }
