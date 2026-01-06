@@ -4,8 +4,8 @@
  */
 
 // --- Constants & Pool Data ---
-const VERSION = '4.0.1'; // Hard Reset - Clean Slate
-const SYNC_EVENT_TYPE = 'FIZZYFEST_V4_STATE';
+const VERSION = '5.0.0'; // Hard Reset - Clean Slate
+const SYNC_EVENT_TYPE = 'FIZZ_V5_CLEAN';
 
 // --- ESPN API Configuration ---
 const ESPN_STATS_URL = 'https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/2025/players?view=kona_player_info';
