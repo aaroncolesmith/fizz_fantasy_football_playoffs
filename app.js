@@ -4,7 +4,7 @@
  */
 
 // --- Constants & Pool Data ---
-const VERSION = '5.2.1'; // Playoff vs Historical Stat Isolation
+const VERSION = '5.3.0'; // Active Draft Banner
 const SYNC_EVENT_TYPE = 'FIZZ_V5_CLEAN';
 
 // --- ESPN API Configuration ---
@@ -945,7 +945,28 @@ function renderLeagues() {
 
 function renderLeagueStats(l) {
     const container = document.getElementById('league-stats-table');
+    const bannerContainer = document.getElementById('league-banner-container');
     if (!container || !l) return;
+
+    // Draft Banner Logic
+    if (bannerContainer) {
+        const isDraftStarted = l.draftOrder && l.draftOrder.length > 0;
+        const isDraftFinished = l.currentPick >= (l.draftOrder?.length || 0) && isDraftStarted;
+
+        if (isDraftStarted && !isDraftFinished) {
+            bannerContainer.innerHTML = `
+                <div class="draft-banner">
+                    <div>
+                        <h4>Your league is drafting now!</h4>
+                        <p>Join the board to make your selection.</p>
+                    </div>
+                    <button class="btn outline-pill" style="background: white; border: none; color: var(--red);" onclick="navigate('draft', '${l.id}')">JOIN</button>
+                </div>
+            `;
+        } else {
+            bannerContainer.innerHTML = '';
+        }
+    }
 
     let html = `
         <div class="d-flex justify-between items-center mb-6">
