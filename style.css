@@ -814,6 +814,34 @@ input:focus {
     border: 1px solid var(--border);
 }
 
+.roster-premium-table {
+    border: none !important;
+}
+
+.roster-premium-table th {
+    background: white !important;
+    border-bottom: 2px solid #f0f0f0 !important;
+    padding: 16px !important;
+}
+
+.roster-premium-table tr:hover {
+    background: #f9f9fb;
+}
+
+.roster-premium-table td {
+    padding: 16px !important;
+    border-bottom: 1px solid #f4f4f7 !important;
+}
+
+.roster-premium-table .p-name {
+    color: var(--text-black);
+    font-size: 0.95rem;
+}
+
+.roster-premium-table tr:last-child td {
+    border-bottom: none;
+}
+
 @media (min-width: 768px) {
     .container {
         max-width: 800px;

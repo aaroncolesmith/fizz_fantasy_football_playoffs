@@ -1,0 +1,194 @@
+PLAYERS BY TEAM:
+
+BUF (12 players):
+  WR  Curtis Samuel
+  TE  Dalton Kincaid
+  TE  Dawson Knox
+  RB  James Cook
+  QB  Josh Allen
+  WR  Joshua Palmer
+  WR  Keon Coleman
+  WR  Khalil Shakir
+  WR  Mack Hollins
+  QB  Mitchell Trubisky
+  RB  Ray Davis
+  RB  Ty Johnson
+
+CAR (10 players):
+  QB  Andy Dalton
+  QB  Bryce Young
+  RB  Chuba Hubbard
+  WR  Hunter Renfrow
+  WR  Jonathan Mingo
+  RB  Miles Sanders
+  WR  Tetairoa McMillan
+  TE  Tommy Tremble
+  RB  Trevor Etienne
+  WR  Xavier Legette
+
+CHI (11 players):
+  QB  Caleb Williams
+  TE  Cole Kmet
+  WR  D.J. Moore
+  TE  Gerald Everett
+  WR  Keenan Allen
+  RB  Khalil Herbert
+  WR  Rome Odunze
+  RB  Roschon Johnson
+  WR  Tyler Scott
+  QB  Tyson Bagent
+  WR  Velus Jones Jr.
+
+DEN (14 players):
+  TE  Adam Trautman
+  RB  Audric Estime
+  QB  Bo Nix
+  WR  Courtland Sutton
+  WR  Devaughn Vele
+  TE  Evan Engram
+  TE  Greg Dulcich
+  RB  J.K. Dobbins
+  QB  Jarrett Stidham
+  WR  Josh Reynolds
+  WR  Marvin Mims Jr.
+  RB  RJ Harvey
+  WR  Troy Franklin
+  RB  Tyler Badie
+
+GB (13 players):
+  WR  Bo Melton
+  WR  Christian Watson
+  WR  Dontayvion Wicks
+  RB  Emanuel Wilson
+  WR  Jayden Reed
+  QB  Jordan Love
+  RB  Josh Jacobs
+  TE  Luke Musgrave
+  WR  Malik Heath
+  QB  Malik Willis
+  RB  MarShawn Lloyd
+  WR  Romeo Doubs
+  TE  Tucker Kraft
+
+HOU (12 players):
+  TE  Brevin Jordan
+  QB  C.J. Stroud
+  TE  Dalton Schultz
+  RB  Dameon Pierce
+  QB  Davis Mills
+  RB  Joe Mixon
+  WR  John Metchie III
+  WR  Nico Collins
+  WR  Stefon Diggs
+  WR  Tank Dell
+  RB  Woody Marks
+  WR  Xavier Hutchinson
+
+JAX (11 players):
+  TE  Brenton Strange
+  WR  Brian Thomas Jr.
+  WR  Christian Kirk
+  WR  Gabe Davis
+  WR  Jakobi Meyers
+  TE  Luke Farrell
+  QB  Mac Jones
+  WR  Parker Washington
+  RB  Tank Bigsby
+  RB  Travis Etienne Jr.
+  QB  Trevor Lawrence
+
+LAC (11 players):
+  WR  Derius Davis
+  QB  Easton Stick
+  RB  Gus Edwards
+  TE  Hayden Hurst
+  QB  Justin Herbert
+  RB  Kimani Vidal
+  WR  Ladd McConkey
+  RB  Omarion Hampton
+  TE  Oronde Gadsden
+  WR  Quentin Johnston
+  TE  Will Dissly
+
+LAR (11 players):
+  RB  Blake Corum
+  TE  Colby Parkinson
+  WR  Davante Adams
+  TE  Davis Allen
+  QB  Jimmy Garoppolo
+  WR  Jordan Whittington
+  RB  Kyren Williams
+  QB  Matthew Stafford
+  WR  Puka Nacua
+  RB  Ronnie Rivers
+  WR  Tutu Atwell
+
+NE (12 players):
+  RB  Antonio Gibson
+  TE  Austin Hooper
+  WR  DeMario Douglas
+  QB  Drake Maye
+  TE  Hunter Henry
+  RB  JaMycal Hasty
+  WR  Javon Baker
+  QB  Joshua Dobbs
+  WR  Kayshon Boutte
+  WR  Kendrick Bourne
+  RB  Rhamondre Stevenson
+  RB  TreVeyon Henderson
+
+PHI (8 players):
+  WR  A.J. Brown
+  TE  Dallas Goedert
+  WR  DeVonta Smith
+  TE  Grant Calcaterra
+  WR  Jahan Dotson
+  QB  Jalen Hurts
+  WR  Johnny Wilson
+  RB  Saquon Barkley
+
+PIT (14 players):
+  QB  Aaron Rodgers
+  WR  Adam Thielen
+  WR  Calvin Austin III
+  TE  Connor Heyward
+  RB  Cordarrelle Patterson
+  TE  Darnell Washington
+  WR  DK Metcalf
+  WR  George Pickens
+  RB  Jaylen Warren
+  QB  Justin Fields
+  RB  Kenneth Gainwell
+  RB  Najee Harris
+  TE  Pat Freiermuth
+  WR  Van Jefferson
+
+SEA (11 players):
+  TE  AJ Barner
+  WR  Cooper Kupp
+  WR  Jake Bobo
+  QB  Jalen Milroe
+  WR  Jaxon Smith-Njigba
+  RB  Kenneth Walker III
+  RB  Kenny McIntosh
+  TE  Noah Fant
+  QB  Sam Darnold
+  WR  Tyler Lockett
+  RB  Zach Charbonnet
+
+SF (12 players):
+  WR  Brandon Aiyuk
+  RB  Brian Robinson Jr.
+  QB  Brock Purdy
+  WR  Chris Conley
+  RB  Christian McCaffrey
+  WR  Deebo Samuel
+  TE  Eric Saubert
+  TE  George Kittle
+  RB  Isaac Guerendo
+  WR  Jauan Jennings
+  RB  Jordan Mason
+  WR  Ricky Pearsall
+
+Total unique players: 162
+Total teams: 14

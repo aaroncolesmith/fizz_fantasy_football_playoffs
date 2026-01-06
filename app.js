@@ -4,7 +4,7 @@
  */
 
 // --- Constants & Pool Data ---
-const VERSION = '5.1.3'; // Stat Accuracy & 2pt Correction
+const VERSION = '5.2.0'; // Integrated Team Roster & Next Game View
 const SYNC_EVENT_TYPE = 'FIZZ_V5_CLEAN';
 
 // --- ESPN API Configuration ---
@@ -319,6 +319,24 @@ const PLAYERS = [
     { id: 240, name: 'Damien Martinez', pos: 'RB', team: 'GB', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
     { id: 241, name: 'Savion Williams', pos: 'WR', team: 'GB', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
 ];
+
+const TEAM_SCHEDULE = {
+    'DEN': 'BYE',
+    'NE': 'Sat. 1/10 vs LAC',
+    'JAX': 'Sun. 1/11 vs BUF',
+    'PIT': 'Mon. 1/12 vs HOU',
+    'HOU': 'Mon. 1/12 @PIT',
+    'BUF': 'Sun. 1/11 @JAX',
+    'LAC': 'Sat. 1/10 @NE',
+    'SEA': 'BYE',
+    'CHI': 'Sun. 1/11 vs GB',
+    'PHI': 'Sun. 1/11 vs SF',
+    'CAR': 'Sat. 1/10 vs LAR',
+    'LAR': 'Sat. 1/10 @CAR',
+    'SF': 'Sun. 1/11 @PHI',
+    'GB': 'Sun. 1/11 @CHI'
+};
+
 const SLOTS = ['QB', 'RB1', 'RB2', 'WR1', 'WR2', 'TE', 'FLEX1', 'FLEX2'];
 
 // --- Persistence Keys ---
@@ -332,6 +350,7 @@ let state = {
     currentLeagueId: null,
     view: 'dashboard',
     draftTab: 'board', // board, roster, feed
+    selectedTeamName: null, // If set, 'roster' tab shows this team instead of current user
     statTab: 'fantasyPts', // fantasyPts, passTD, etc
     sortCol: 'fantasyPts',
     sortDir: 'desc',
@@ -838,7 +857,12 @@ function renderBreadcrumbs() {
     if (l) {
         html += `<span class="${state.view === 'league-detail' ? 'active' : ''}" onclick="navigate('league-detail', '${l.id}')">${l.name}</span>`;
         if (state.view === 'draft') {
-            html += `<span class="active">DRAFT</span>`;
+            const teamName = state.selectedTeamName || state.currentUser;
+            if (state.draftTab === 'roster' && teamName) {
+                html += `<span class="active">${teamName}</span>`;
+            } else {
+                html += `<span class="active">DRAFT</span>`;
+            }
         } else if (state.view === 'settings') {
             html += `<span class="active">SETTINGS</span>`;
         }
@@ -855,6 +879,10 @@ window.navigate = (view, leagueId = null) => {
     } else if (view === 'dashboard') {
         state.currentLeagueId = null;
     }
+
+    // Reset roster view when leaving draft/team view
+    if (view !== 'draft') state.selectedTeamName = null;
+
     showSection(`${view}-view`);
     updateUI();
 };
@@ -1040,48 +1068,11 @@ function renderDraftUI(l) {
 }
 
 window.viewTeamRoster = (teamName) => {
-    const l = getActiveLeague();
-    if (!l) return;
-    const team = l.teams.find(t => t.name === teamName);
-    if (!team) return;
-
-    const rosterMap = getTeamRosterMap(team.roster);
-
-    // Create a simple overlay/modal
-    const modal = document.createElement('div');
-    modal.className = 'glass';
-    modal.style = `
-        position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-        z-index: 2000; padding: 30px; border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-        max-width: 400px; width: 90%; background: white;
-    `;
-
-    let rosterHtml = SLOTS.map(slot => {
-        const p = rosterMap[slot];
-        return `
-            <div style="display:flex; justify-content:between; padding: 10px; border-bottom: 1px solid #eee;">
-                <span style="font-weight: 800; opacity: 0.4; width: 60px;">${slot}</span>
-                <span style="font-weight: 700;">${p ? p.name : '<span style="opacity:0.2">—</span>'}</span>
-                <span style="margin-left: auto; font-size: 0.7rem; color: var(--gray);">${p ? p.team : ''}</span>
-            </div>
-        `;
-    }).join('');
-
-    modal.innerHTML = `
-        <div style="display:flex; justify-content:between; align-items:center; margin-bottom: 20px;">
-            <h3 style="margin:0; font-weight:800; text-transform:uppercase;">${teamName}'s Roster</h3>
-            <button onclick="this.parentElement.parentElement.remove()" class="btn-mini">Close</button>
-        </div>
-        <div>${rosterHtml}</div>
-    `;
-
-    document.body.appendChild(modal);
-
-    // Add backdrop
-    const backdrop = document.createElement('div');
-    backdrop.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1999;";
-    backdrop.onclick = () => { modal.remove(); backdrop.remove(); };
-    document.body.appendChild(backdrop);
+    state.selectedTeamName = teamName;
+    state.draftTab = 'roster';
+    state.view = 'draft';
+    showSection('draft-view');
+    updateUI();
 };
 
 function renderFilters(l) {
@@ -1456,31 +1447,31 @@ function renderRoster(l) {
     const grid = document.getElementById('roster-grid-main');
     if (!grid) return;
 
-    const myTeam = l.teams.find(t => t.name.toLowerCase() === state.currentUser.toLowerCase());
-    if (!myTeam) {
+    const targetTeamName = state.selectedTeamName || state.currentUser;
+    const team = l.teams.find(t => t.name.toLowerCase() === targetTeamName.toLowerCase());
+
+    if (!team) {
         grid.innerHTML = '<div class="text-center font-bold p-8">TEAM NOT FOUND</div>';
         return;
     }
 
-    const map = getTeamRosterMap(myTeam.roster);
+    const map = getTeamRosterMap(team.roster);
 
-    // Build roster table
+    // Build roster table with "Next Game" and cleaner aesthetics
     let tableHTML = `
-        <table class="player-table" style="width: 100%;">
+        <table class="simple-table roster-premium-table">
             <thead>
                 <tr>
-                    <th style="text-align: left; padding: 12px 16px;">SLOT</th>
-                    <th style="text-align: left; padding: 12px 16px;">PLAYER</th>
-                    <th style="text-align: center; padding: 12px 16px;">TEAM</th>
-                    <th style="text-align: center; padding: 12px 16px;">POS</th>
-                    <th style="text-align: center; padding: 12px 16px; color: var(--red);">POINTS</th>
-                    <th style="text-align: center; padding: 12px 16px;">PASS YDS</th>
-                    <th style="text-align: center; padding: 12px 16px;">PASS TD</th>
-                    <th style="text-align: center; padding: 12px 16px;">RUSH YDS</th>
-                    <th style="text-align: center; padding: 12px 16px;">RUSH TD</th>
-                    <th style="text-align: center; padding: 12px 16px;">RECS</th>
-                    <th style="text-align: center; padding: 12px 16px;">REC YDS</th>
-                    <th style="text-align: center; padding: 12px 16px;">REC TD</th>
+                    <th style="padding: 14px 16px;">SLOT</th>
+                    <th style="padding: 14px 16px;">PLAYER</th>
+                    <th style="padding: 14px 16px;">TEAM</th>
+                    <th style="padding: 14px 16px;">NEXT GAME</th>
+                    <th style="padding: 14px 16px; text-align: center;">POS</th>
+                    <th style="padding: 14px 16px; text-align: center; color: var(--red);">POINTS</th>
+                    <th style="padding: 14px 16px; text-align: center;">PASS YDS</th>
+                    <th style="padding: 14px 16px; text-align: center;">PASS TD</th>
+                    <th style="padding: 14px 16px; text-align: center;">RUSH YDS</th>
+                    <th style="padding: 14px 16px; text-align: center;">RUSH TD</th>
                 </tr>
             </thead>
             <tbody>
@@ -1491,27 +1482,29 @@ function renderRoster(l) {
 
         if (p) {
             const pts = calculateFantasyPoints(p);
+            const nextGame = TEAM_SCHEDULE[p.team] || 'TBD';
+
             tableHTML += `
-                <tr style="border-bottom: 1px solid #eee;">
-                    <td style="padding: 12px 16px; font-weight: 800; color: var(--gray); font-size: 0.75rem;">${slot}</td>
-                    <td style="padding: 12px 16px; font-weight: 700;">${p.name}</td>
-                    <td style="text-align: center; padding: 12px 16px; font-weight: 800; color: var(--gray);">${p.team}</td>
-                    <td style="text-align: center; padding: 12px 16px; font-weight: 800; color: var(--gray);">${p.pos}</td>
-                    <td style="text-align: center; padding: 12px 16px; font-weight: 800; color: var(--red);">${pts}</td>
-                    <td style="text-align: center; padding: 12px 16px;">${Math.round(p.passYds || 0)}</td>
-                    <td style="text-align: center; padding: 12px 16px;">${p.passTD || 0}</td>
-                    <td style="text-align: center; padding: 12px 16px;">${Math.round(p.rushYds || 0)}</td>
-                    <td style="text-align: center; padding: 12px 16px;">${p.rushTD || 0}</td>
-                    <td style="text-align: center; padding: 12px 16px;">${p.recs || 0}</td>
-                    <td style="text-align: center; padding: 12px 16px;">${Math.round(p.recYds || 0)}</td>
-                    <td style="text-align: center; padding: 12px 16px;">${p.recTD || 0}</td>
+                <tr>
+                    <td style="padding: 14px 16px; font-weight: 800; color: var(--gray); font-size: 0.7rem;">${slot}</td>
+                    <td style="padding: 14px 16px; font-weight: 800;">
+                        <div class="p-name" style="font-size:0.9rem;">${p.name}</div>
+                    </td>
+                    <td style="padding: 14px 16px; font-weight: 800; color: var(--gray); font-size: 0.8rem;">${p.team}</td>
+                    <td style="padding: 14px 16px; font-weight: 600; font-size: 0.75rem; color: #444;">${nextGame}</td>
+                    <td style="text-align: center; padding: 14px 16px; font-weight: 800; color: var(--gray);">${p.pos}</td>
+                    <td style="text-align: center; padding: 14px 16px; font-weight: 800; color: var(--red); font-size: 0.9rem;">${pts.toFixed(2)}</td>
+                    <td style="text-align: center; padding: 14px 16px; font-size: 0.85rem; font-weight: 600;">${Math.round(p.passYds || 0).toLocaleString()}</td>
+                    <td style="text-align: center; padding: 14px 16px; font-size: 0.85rem; font-weight: 600;">${p.passTD || 0}</td>
+                    <td style="text-align: center; padding: 14px 16px; font-size: 0.85rem; font-weight: 600;">${Math.round(p.rushYds || 0).toLocaleString()}</td>
+                    <td style="text-align: center; padding: 14px 16px; font-size: 0.85rem; font-weight: 600;">${p.rushTD || 0}</td>
                 </tr>
             `;
         } else {
             tableHTML += `
-                <tr style="border-bottom: 1px solid #eee; opacity: 0.4;">
-                    <td style="padding: 12px 16px; font-weight: 800; color: var(--gray); font-size: 0.75rem;">${slot}</td>
-                    <td colspan="11" style="padding: 12px 16px; font-style: italic;">Empty</td>
+                <tr style="opacity: 0.3;">
+                    <td style="padding: 14px 16px; font-weight: 800; color: var(--gray); font-size: 0.7rem;">${slot}</td>
+                    <td colspan="9" style="padding: 14px 16px; font-style: italic; font-size: 0.8rem;">Empty</td>
                 </tr>
             `;
         }
@@ -1827,6 +1820,8 @@ function setupListeners() {
         const draftTab = e.target.closest('[data-draft-tab]');
         if (draftTab) {
             state.draftTab = draftTab.dataset.draftTab;
+            // If clicking the tab manually, reset selected team to show own roster
+            if (state.draftTab === 'roster') state.selectedTeamName = null;
             const l = getActiveLeague();
             renderDraftUI(l);
         }
