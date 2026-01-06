@@ -4,7 +4,7 @@
  */
 
 // --- Constants & Pool Data ---
-const VERSION = '5.1.1'; // One Code Per League Fix
+const VERSION = '5.1.2'; // 2pt Conversion Fix
 const SYNC_EVENT_TYPE = 'FIZZ_V5_CLEAN';
 
 // --- ESPN API Configuration ---
@@ -695,12 +695,10 @@ async function syncStatsFromESPN() {
                 p.recTD = parseFloat(statsObj[STAT_MAP.recTD] || 0);
                 p.fumbles = parseFloat(statsObj[STAT_MAP.fumbles] || 0);
 
-                // DISABLED: ESPN API returns incorrect 2pt conversion data
-                // The stat IDs may be documented but the actual values are wrong
-                // Forcing all 2pt conversions to 0 until verified
-                p.pass2pt = 0;  // parseFloat(statsObj[STAT_MAP.pass2pt] || 0);
-                p.rush2pt = 0;  // parseFloat(statsObj[STAT_MAP.rush2pt] || 0);
-                p.rec2pt = 0;   // parseFloat(statsObj[STAT_MAP.rec2pt] || 0);
+                // Re-enabling 2pt conversions based on user feedback
+                p.pass2pt = parseFloat(statsObj[STAT_MAP.pass2pt] || 0);
+                p.rush2pt = parseFloat(statsObj[STAT_MAP.rush2pt] || 0);
+                p.rec2pt = parseFloat(statsObj[STAT_MAP.rec2pt] || 0);
 
                 p.fantasyPts = calculateFantasyPoints(p);
                 matches++;
