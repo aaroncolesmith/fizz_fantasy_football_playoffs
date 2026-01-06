@@ -4,7 +4,7 @@
  */
 
 // --- Constants & Pool Data ---
-const VERSION = '4.0.0'; // Hard Reset - Clean Slate
+const VERSION = '4.0.1'; // Hard Reset - Clean Slate
 const SYNC_EVENT_TYPE = 'FIZZYFEST_V4_STATE';
 
 // --- ESPN API Configuration ---
@@ -328,7 +328,7 @@ const KEY_USER = 'ff_user_v1';
 // --- State Management ---
 let state = {
     currentUser: localStorage.getItem(KEY_USER) || null,
-    leagues: JSON.parse(localStorage.getItem(KEY_LEAGUES)) || [],
+    leagues: [], // ONLY pull leagues from Global Cloud, never load from Local Storage
     currentLeagueId: null,
     view: 'dashboard',
     draftTab: 'board', // board, roster, feed
@@ -404,7 +404,7 @@ async function createCloudSync() {
             .insert({
                 game_code: CLOUD_SYNC_ID,
                 hand_number: 999,
-                event_type: 'FIZZYFEST_STATE',
+                event_type: SYNC_EVENT_TYPE,
                 event_data: { leagues: state.leagues },
                 player_name: state.currentUser,
                 occurred_at: new Date().toISOString()
@@ -1730,9 +1730,11 @@ function setupListeners() {
 
         const normalized = input.toLowerCase();
 
-        // 1. Global Search: See if Supabase knows about this user in any league
+        // 1. Global Search: Clear local first to enforce cloud-only source of truth
         console.log("Searching Supabase for user records...");
-        state.currentUser = input; // Set temporarily for the sync query
+        state.currentUser = input;
+        state.leagues = [];
+        localStorage.removeItem(KEY_LEAGUES);
         await refreshGlobalState();
 
         const isAaron = normalized === 'aaron';
