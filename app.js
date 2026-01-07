@@ -284,7 +284,6 @@ const PLAYERS = [
     { id: 154, name: 'Brian Robinson Jr.', pos: 'RB', team: 'SF', passTD: 0, rushTD: 7, recTD: 1, recs: 22 },
     { id: 155, name: 'Isaac Guerendo', pos: 'RB', team: 'SF', passTD: 0, rushTD: 4, recTD: 0, recs: 12 },
     { id: 156, name: 'Jordan Mason', pos: 'RB', team: 'SF', passTD: 0, rushTD: 3, recTD: 0, recs: 10 },
-    { id: 157, name: 'Deebo Samuel', pos: 'WR', team: 'SF', passTD: 0, rushTD: 5, recTD: 6, recs: 68 },
     { id: 158, name: 'Brandon Aiyuk', pos: 'WR', team: 'SF', passTD: 0, rushTD: 0, recTD: 7, recs: 78 },
     { id: 159, name: 'Jauan Jennings', pos: 'WR', team: 'SF', passTD: 0, rushTD: 0, recTD: 8, recs: 52 },
     { id: 160, name: 'Ricky Pearsall', pos: 'WR', team: 'SF', passTD: 0, rushTD: 0, recTD: 4, recs: 48 },
