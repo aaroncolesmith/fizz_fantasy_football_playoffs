@@ -4,7 +4,7 @@
  */
 
 // --- Constants & Pool Data ---
-const VERSION = '5.3.0'; // Active Draft Banner
+const VERSION = '5.3.1'; // Draft Feed Auto-Scroll
 const SYNC_EVENT_TYPE = 'FIZZ_V5_CLEAN';
 
 // --- ESPN API Configuration ---
@@ -1638,10 +1638,11 @@ function renderDraftFeed(l) {
     filteredEvents.forEach(event => {
         const div = document.createElement('div');
         div.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid #eee;';
-
+        div.classList.add('feed-item');
         if (event.type === 'upcoming') {
             // Upcoming pick - green style
             if (event.isCurrent) {
+                div.classList.add('active');
                 div.style.cssText += ' background: rgba(76, 217, 100, 0.1); border-left: 3px solid var(--green);';
             }
             div.innerHTML = `
@@ -1664,13 +1665,13 @@ function renderDraftFeed(l) {
         feedEl.appendChild(div);
     });
 
-    // Auto-scroll to current pick on initial load
-    if (!feedTeamFilter && pickNum > 0) {
+    // Auto-scroll to current pick
+    if (pickNum >= 0) {
         const currentPickEl = feedEl.querySelector('.feed-item.active');
         if (currentPickEl) {
             setTimeout(() => {
                 currentPickEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }, 100);
+            }, 50);
         }
     }
 }
