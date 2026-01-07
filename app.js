@@ -361,6 +361,10 @@ let state = {
     }
 };
 
+// Expose state for console access
+window.state = state;
+window.PLAYERS = PLAYERS;
+
 // --- Dropdown Management ---
 let openDropdown = null; // 'pos', 'team', or 'avail'
 let tempFilters = [];
