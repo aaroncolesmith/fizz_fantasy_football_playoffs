@@ -4,7 +4,7 @@
  */
 
 // --- Constants & Pool Data ---
-const VERSION = '5.3.1'; // Draft Feed Auto-Scroll
+const VERSION = '5.3.2'; // Unlimited Draft Feed
 const SYNC_EVENT_TYPE = 'FIZZ_V5_CLEAN';
 
 // --- ESPN API Configuration ---
@@ -1612,7 +1612,7 @@ function renderDraftFeed(l) {
     });
 
     // Add upcoming picks
-    const upcomingCount = Math.min(totalPicks - pickNum, 20); // Show next 20 picks
+    const upcomingCount = totalPicks - pickNum; // Show all remaining picks
     for (let i = 0; i < upcomingCount; i++) {
         const turn = l.draftOrder[pickNum + i];
         if (turn) {
