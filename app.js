@@ -4,7 +4,7 @@
  */
 
 // --- Constants & Pool Data ---
-const VERSION = '5.3.2'; // Unlimited Draft Feed
+const VERSION = '5.3.3'; // Fixed Player ID Collisions (Stroud/Wilson)
 const SYNC_EVENT_TYPE = 'FIZZ_V5_CLEAN';
 
 // --- ESPN API Configuration ---
@@ -120,11 +120,11 @@ const PLAYERS = [
     { id: 50, name: 'Adam Thielen', pos: 'WR', team: 'PIT', passTD: 0, rushTD: 0, recTD: 4, recs: 58 },
     { id: 51, name: 'Van Jefferson', pos: 'WR', team: 'PIT', passTD: 0, rushTD: 0, recTD: 2, recs: 25 },
     { id: 52, name: 'Calvin Austin III', pos: 'WR', team: 'PIT', passTD: 0, rushTD: 0, recTD: 2, recs: 22 },
-    { id: 56, name: 'Roman Wilson', pos: 'WR', team: 'PIT', passTD: 0, rushTD: 0, recTD: 2, recs: 12, recYds: 166 },
+    { id: 49, name: 'Roman Wilson', pos: 'WR', team: 'PIT', passTD: 0, rushTD: 0, recTD: 2, recs: 12, recYds: 166 },
     { id: 53, name: 'Pat Freiermuth', pos: 'TE', team: 'PIT', passTD: 0, rushTD: 0, recTD: 4, recs: 55 },
     { id: 54, name: 'Darnell Washington', pos: 'TE', team: 'PIT', passTD: 0, rushTD: 0, recTD: 1, recs: 18 },
     { id: 55, name: 'Connor Heyward', pos: 'TE', team: 'PIT', passTD: 0, rushTD: 0, recTD: 1, recs: 15 },
-    { id: 57, name: 'Jonnu Smith', pos: 'TE', team: 'PIT', passTD: 0, rushTD: 0, recTD: 2, recs: 30, recYds: 220 },
+    { id: 152, name: 'Jonnu Smith', pos: 'TE', team: 'PIT', passTD: 0, rushTD: 0, recTD: 2, recs: 30, recYds: 220 },
 
     { id: 189, name: 'Scotty Miller', pos: 'WR', team: 'PIT', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
     { id: 190, name: 'Kaleb Johnson', pos: 'RB', team: 'PIT', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
