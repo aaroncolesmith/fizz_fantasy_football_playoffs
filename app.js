@@ -4,7 +4,7 @@
  */
 
 // --- Constants & Pool Data ---
-const VERSION = '5.4.0'; // Post-Draft UI Improvements
+const VERSION = '5.4.1'; // Fixed Roster Stats Leak
 const SYNC_EVENT_TYPE = 'FIZZ_V5_CLEAN';
 
 // --- ESPN API Configuration ---
@@ -802,11 +802,15 @@ function normalizePlayers() {
         }
 
         // 2. Zero out root properties (Playoff Stats)
-        p.passYds = 0; p.passTD = 0; p.ints = 0;
-        p.rushYds = 0; p.rushTD = 0; p.recs = 0;
-        p.recYds = 0; p.recTD = 0; p.fumbles = 0;
-        p.pass2pt = 0; p.rush2pt = 0; p.rec2pt = 0;
-        p.fantasyPts = 0;
+        // We zero out everything that calculateFantasyPoints uses
+        const statsToZero = [
+            'passYds', 'passTD', 'ints', 'rushYds', 'rushTD',
+            'recs', 'recYds', 'recTD', 'fumbles',
+            'pass2pt', 'rush2pt', 'rec2pt', 'fantasyPts'
+        ];
+        statsToZero.forEach(sKey => {
+            p[sKey] = 0;
+        });
     });
 }
 
@@ -1533,8 +1537,10 @@ function renderRoster(l) {
         const p = map[slot];
 
         if (p) {
-            const pts = calculateFantasyPoints(p);
-            const nextGame = TEAM_SCHEDULE[p.team] || 'TBD';
+            // Always lookup the latest player stats from master array (which is zeroed for playoffs)
+            const masterP = PLAYERS.find(mp => mp.id === p.id) || p;
+            const pts = calculateFantasyPoints(masterP, false);
+            const nextGame = TEAM_SCHEDULE[masterP.team] || 'TBD';
 
             tableHTML += `
                 <tr>
@@ -1546,10 +1552,10 @@ function renderRoster(l) {
                     <td style="padding: 14px 16px; font-weight: 600; font-size: 0.75rem; color: #444;">${nextGame}</td>
                     <td style="text-align: center; padding: 14px 16px; font-weight: 800; color: var(--gray);">${p.pos}</td>
                     <td style="text-align: center; padding: 14px 16px; font-weight: 800; color: var(--red); font-size: 0.9rem;">${pts.toFixed(2)}</td>
-                    <td style="text-align: center; padding: 14px 16px; font-size: 0.85rem; font-weight: 600;">${Math.round(p.passYds || 0).toLocaleString()}</td>
-                    <td style="text-align: center; padding: 14px 16px; font-size: 0.85rem; font-weight: 600;">${p.passTD || 0}</td>
-                    <td style="text-align: center; padding: 14px 16px; font-size: 0.85rem; font-weight: 600;">${Math.round(p.rushYds || 0).toLocaleString()}</td>
-                    <td style="text-align: center; padding: 14px 16px; font-size: 0.85rem; font-weight: 600;">${p.rushTD || 0}</td>
+                    <td style="text-align: center; padding: 14px 16px; font-size: 0.85rem; font-weight: 600;">${Math.round(masterP.passYds || 0).toLocaleString()}</td>
+                    <td style="text-align: center; padding: 14px 16px; font-size: 0.85rem; font-weight: 600;">${masterP.passTD || 0}</td>
+                    <td style="text-align: center; padding: 14px 16px; font-size: 0.85rem; font-weight: 600;">${Math.round(masterP.rushYds || 0).toLocaleString()}</td>
+                    <td style="text-align: center; padding: 14px 16px; font-size: 0.85rem; font-weight: 600;">${masterP.rushTD || 0}</td>
                 </tr>
             `;
         } else {
