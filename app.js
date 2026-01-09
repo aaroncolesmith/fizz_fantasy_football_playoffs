@@ -4,7 +4,7 @@
  */
 
 // --- Constants & Pool Data ---
-const VERSION = '5.3.3'; // Fixed Player ID Collisions (Stroud/Wilson)
+const VERSION = '5.4.0'; // Post-Draft UI Improvements
 const SYNC_EVENT_TYPE = 'FIZZ_V5_CLEAN';
 
 // --- ESPN API Configuration ---
@@ -1077,6 +1077,10 @@ function renderDraftUI(l) {
         if (btn) btn.classList.toggle('active', state.draftTab === t);
     });
 
+    // Hide draft nav if viewing specific team
+    const draftNav = document.querySelector('.draft-tabs-nav');
+    if (draftNav) draftNav.classList.toggle('hidden', !!state.selectedTeamName);
+
     if (state.draftTab === 'board') {
         renderFilters(l);
         renderPlayerList(l);
@@ -1487,9 +1491,15 @@ function renderDraftOrder(l) {
 
 function renderRoster(l) {
     const grid = document.getElementById('roster-grid-main');
+    const titleEl = document.getElementById('roster-section-title');
     if (!grid) return;
 
     const targetTeamName = state.selectedTeamName || state.currentUser;
+    if (titleEl) {
+        titleEl.innerText = state.selectedTeamName
+            ? `${state.selectedTeamName.toUpperCase()} ROSTER`
+            : 'MY ROSTER';
+    }
     const team = l.teams.find(t => t.name.toLowerCase() === targetTeamName.toLowerCase());
 
     if (!team) {
