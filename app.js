@@ -907,6 +907,11 @@ function getPointsBreakdown(p, useHistorical = false) {
     return lines.length ? lines.join('\n') : "No points scored";
 }
 
+window.showBreakdown = (pid, historical) => {
+    const p = PLAYERS.find(x => x.id === pid);
+    if (p) alert(`${p.name} Points Breakdown:\n\n` + getPointsBreakdown(p, historical));
+};
+
 function normalizePlayers() {
     PLAYERS.forEach(p => {
         // 1. Initialize Historical Stats from existing hardcoded data (first boot)
@@ -1493,8 +1498,9 @@ function renderPlayerList(l) {
             <td style="text-align:center; font-weight:800; color:var(--gray); padding: 0 10px;">${p.team}</td>
             <td style="text-align:center; font-weight:800; color:var(--gray); padding: 0 10px;">${p.pos}</td>
             <td class="stat-cell ${state.statTab === 'fantasyPts' ? 'active' : ''}" 
-                style="text-align:center; padding: 0 10px; color: var(--red); font-weight:bold; cursor:help;"
-                title="${getPointsBreakdown(p, true)}">${calculateFantasyPoints(p, true)}</td>
+                style="text-align:center; padding: 0 10px; color: var(--red); font-weight:bold; cursor:pointer;"
+                title="Click for breakdown"
+                onclick="window.showBreakdown(${p.id}, true)">${calculateFantasyPoints(p, true)}</td>
             <td class="stat-cell ${state.statTab === 'passYds' ? 'active' : ''}" style="text-align:center; padding: 0 10px;">${Math.round(hs.passYds || 0)}</td>
             <td class="stat-cell ${state.statTab === 'passTD' ? 'active' : ''}" style="text-align:center; padding: 0 10px;">${hs.passTD || 0}</td>
             <td class="stat-cell ${state.statTab === 'rushYds' ? 'active' : ''}" style="text-align:center; padding: 0 10px;">${Math.round(hs.rushYds || 0)}</td>
@@ -1661,6 +1667,8 @@ function renderRoster(l) {
                     <th style="padding: 14px 16px; text-align: center;">PASS TD</th>
                     <th style="padding: 14px 16px; text-align: center;">RUSH YDS</th>
                     <th style="padding: 14px 16px; text-align: center;">RUSH TD</th>
+                    <th style="padding: 14px 16px; text-align: center;">RECS</th>
+                    <th style="padding: 14px 16px; text-align: center;">REC TD</th>
                 </tr>
             </thead>
             <tbody>
@@ -1684,18 +1692,20 @@ function renderRoster(l) {
                     <td style="padding: 14px 16px; font-weight: 800; color: var(--gray); font-size: 0.8rem;">${p.team}</td>
                     <td style="padding: 14px 16px; font-weight: 600; font-size: 0.75rem; color: #444;">${nextGame}</td>
                     <td style="text-align: center; padding: 14px 16px; font-weight: 800; color: var(--gray);">${p.pos}</td>
-                    <td style="text-align: center; padding: 14px 16px; font-weight: 800; color: var(--red); font-size: 0.9rem;">${pts.toFixed(2)}</td>
+                    <td style="text-align: center; padding: 14px 16px; font-weight: 800; color: var(--red); font-size: 0.9rem; cursor:pointer;" title="Click for breakdown" onclick="window.showBreakdown(${p.id}, false)">${pts.toFixed(2)}</td>
                     <td style="text-align: center; padding: 14px 16px; font-size: 0.85rem; font-weight: 600;">${Math.round(masterP.passYds || 0).toLocaleString()}</td>
                     <td style="text-align: center; padding: 14px 16px; font-size: 0.85rem; font-weight: 600;">${masterP.passTD || 0}</td>
                     <td style="text-align: center; padding: 14px 16px; font-size: 0.85rem; font-weight: 600;">${Math.round(masterP.rushYds || 0).toLocaleString()}</td>
                     <td style="text-align: center; padding: 14px 16px; font-size: 0.85rem; font-weight: 600;">${masterP.rushTD || 0}</td>
+                    <td style="text-align: center; padding: 14px 16px; font-size: 0.85rem; font-weight: 600;">${masterP.recs || 0}</td>
+                    <td style="text-align: center; padding: 14px 16px; font-size: 0.85rem; font-weight: 600;">${masterP.recTD || 0}</td>
                 </tr>
             `;
         } else {
             tableHTML += `
                 <tr style="opacity: 0.3;">
                     <td style="padding: 14px 16px; font-weight: 800; color: var(--gray); font-size: 0.7rem;">${slot}</td>
-                    <td colspan="9" style="padding: 14px 16px; font-style: italic; font-size: 0.8rem;">Empty</td>
+                    <td colspan="11" style="padding: 14px 16px; font-style: italic; font-size: 0.8rem;">Empty</td>
                 </tr>
             `;
         }
