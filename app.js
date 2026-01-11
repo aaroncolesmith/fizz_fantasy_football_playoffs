@@ -4,7 +4,7 @@
  */
 
 // --- Constants & Pool Data ---
-const VERSION = '5.7.0'; // Rem. Players & League Sorting
+const VERSION = '5.7.1'; // Eliminated Player Coloring
 const SYNC_EVENT_TYPE = 'FIZZ_V5_CLEAN';
 
 // --- ESPN API Configuration ---
@@ -1794,16 +1794,18 @@ function renderRoster(l) {
             // Always lookup the latest player stats from master array (which is zeroed for playoffs)
             const masterP = PLAYERS.find(mp => mp.id === p.id) || p;
             const pts = calculateFantasyPoints(masterP, false);
-            const nextGame = TEAM_SCHEDULE[masterP.team] || 'TBD';
+            const isEliminated = ELIMINATED_TEAMS.has(masterP.team);
+            const nextGame = isEliminated ? 'ELIMINATED' : (TEAM_SCHEDULE[masterP.team] || 'TBD');
+            const rowStyle = isEliminated ? 'background: #fff5f5;' : '';
 
             tableHTML += `
-                <tr>
+                <tr style="${rowStyle}">
                     <td style="padding: 14px 16px; font-weight: 800; color: var(--gray); font-size: 0.7rem;">${slot}</td>
                     <td style="padding: 14px 16px; font-weight: 800;">
                         <div class="p-name" style="font-size:0.9rem;">${p.name}</div>
                     </td>
                     <td style="padding: 14px 16px; font-weight: 800; color: var(--gray); font-size: 0.8rem;">${p.team}</td>
-                    <td style="padding: 14px 16px; font-weight: 600; font-size: 0.75rem; color: #444;">${nextGame}</td>
+                    <td style="padding: 14px 16px; font-weight: 600; font-size: 0.75rem; color: ${isEliminated ? 'var(--red)' : '#444'};">${nextGame}</td>
                     <td style="text-align: center; padding: 14px 16px; font-weight: 800; color: var(--gray);">${p.pos}</td>
                     <td style="text-align: center; padding: 14px 16px; font-weight: 800; color: var(--red); font-size: 0.9rem; cursor:pointer;" title="Click for breakdown" onclick="window.showBreakdown(${p.id}, false)">${pts.toFixed(2)}</td>
                     <td style="text-align: center; padding: 14px 16px; font-size: 0.85rem; font-weight: 600;">${Math.round(masterP.passYds || 0).toLocaleString()}</td>
