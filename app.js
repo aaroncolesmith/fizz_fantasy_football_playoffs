@@ -751,15 +751,21 @@ window.syncLivePlayoffStats = async function () {
         const scoreboardData = await scoreboardResponse.json();
         const games = scoreboardData.events || [];
 
-        // Filter for games that have started or finished
-        const validGames = games.filter(g =>
-            g.status.type.state === 'in' ||
-            g.status.type.state === 'post' ||
-            ['In Progress', 'Final', 'Halftime', 'End of Period'].includes(g.status.type.description)
-        );
+        // Filter for games that have started or finished AND are part of the actual playoff schedule
+        // (Wild Card weekend starts Jan 10, 2026. Prior Jan 2026 games are Regular Season Week 18).
+        const validGames = games.filter(g => {
+            const isStarted = g.status.type.state === 'in' ||
+                g.status.type.state === 'post' ||
+                ['In Progress', 'Final', 'Halftime', 'End of Period'].includes(g.status.type.description);
+            const isPlayoffDate = new Date(g.date) >= new Date('2026-01-10T00:00:00Z');
+            return isStarted && isPlayoffDate;
+        });
 
         if (validGames.length === 0) {
-            console.log('No live or completed 2026 playoff games found.');
+            console.log('No live or completed 2026 playoff games found (starting Jan 10).');
+            // Still update UI in case we need to clear previous values
+            PLAYERS.forEach(p => p.fantasyPts = calculateFantasyPoints(p, false));
+            updateUI();
             return;
         }
 
