@@ -4,7 +4,7 @@
  */
 
 // --- Constants & Pool Data ---
-const VERSION = '5.11.0'; // Name Normalization Fix
+const VERSION = '5.11.2'; // UI Rendering Fixes
 const SYNC_EVENT_TYPE = 'FIZZ_V5_CLEAN';
 
 // --- ESPN API Configuration ---
@@ -1864,10 +1864,10 @@ function renderDraftOrder(l) {
 
     const upcoming = l.draftOrder.slice(l.currentPick, l.currentPick + 6);
     c.innerHTML = upcoming.map((p, i) => `
-        < div style = "font-size: 0.75rem; margin-bottom: 6px; font-weight: 600; opacity: ${i === 0 ? 1 : 0.5}" >
+        <div style="font-size: 0.75rem; margin-bottom: 6px; font-weight: 600; opacity: ${i === 0 ? 1 : 0.5}">
             ${l.currentPick + i + 1}. ${p.name} (R${p.round})
-        </div >
-        `).join('');
+        </div>
+    `).join('');
 
     badge.innerText = `Pick ${l.currentPick + 1} `;
 }
@@ -1894,7 +1894,7 @@ function renderRoster(l) {
 
     // Build roster table with "Next Game" and cleaner aesthetics
     let tableHTML = `
-        < table class="simple-table roster-premium-table" >
+        <table class="simple-table roster-premium-table">
             <thead>
                 <tr>
                     <th style="padding: 14px 16px;">SLOT</th>
@@ -1955,8 +1955,8 @@ function renderRoster(l) {
 
     tableHTML += `
             </tbody>
-        </table >
-        `;
+        </table>
+    `;
 
     grid.innerHTML = tableHTML;
 }
@@ -1973,17 +1973,16 @@ function renderDraftFeed(l) {
     if (filterMenu) {
         const teams = l.teams || [];
         filterMenu.innerHTML = `
-        < div class="dropdown-item ${feedTeamFilter === null ? 'active' : ''}" onclick = "setFeedTeamFilter(null)" >
-            All Teams
-            </div >
-        ${teams.map(t => `
+            <div class="dropdown-item ${feedTeamFilter === null ? 'active' : ''}" onclick="setFeedTeamFilter(null)">
+                All Teams
+            </div>
+            ${teams.map(t => `
                 <div class="dropdown-item ${feedTeamFilter === t.name ? 'active' : ''}" 
                      onclick="setFeedTeamFilter('${t.name}')">
                     ${t.name.toUpperCase()}
                 </div>
-            `).join('')
-            }
-    `;
+            `).join('')}
+        `;
     }
 
     // Update filter display
@@ -2049,9 +2048,9 @@ function renderDraftFeed(l) {
                 div.style.cssText += ' background: rgba(76, 217, 100, 0.1); border-left: 3px solid var(--green);';
             }
             div.innerHTML = `
-        < span style = "font-weight: 700; color: ${event.isCurrent ? 'var(--green)' : 'var(--gray)'}; min-width: 80px;" > PICK ${event.pickNum}</span >
-            <span style="flex: 1; text-align: right; font-weight: 800;">${event.owner.toUpperCase()} ${event.isCurrent ? '🏈' : ''}</span>
-    `;
+                <span style="font-weight: 700; color: ${event.isCurrent ? 'var(--green)' : 'var(--gray)'}; min-width: 80px;">PICK ${event.pickNum}</span>
+                <span style="flex: 1; text-align: right; font-weight: 800;">${event.owner.toUpperCase()} ${event.isCurrent ? '🏈' : ''}</span>
+            `;
         } else {
             // Past pick - show player info on one line
             const playerInfo = event.player
@@ -2059,10 +2058,10 @@ function renderDraftFeed(l) {
                 : 'Unknown Player';
 
             div.innerHTML = `
-        < span style = "font-weight: 700; color: var(--gray); min-width: 80px;" > #${event.pickNum}</span >
+                <span style="font-weight: 700; color: var(--gray); min-width: 80px;">#${event.pickNum}</span>
                 <span style="flex: 1; font-weight: 700;">${playerInfo}</span>
                 <span style="font-weight: 800; min-width: 120px; text-align: right;">${event.owner.toUpperCase()}</span>
-    `;
+            `;
         }
 
         feedEl.appendChild(div);
