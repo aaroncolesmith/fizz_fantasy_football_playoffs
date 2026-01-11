@@ -4,7 +4,7 @@
  */
 
 // --- Constants & Pool Data ---
-const VERSION = '5.6.0'; // 2026 Live Playoff Stats
+const VERSION = '5.7.0'; // Rem. Players & League Sorting
 const SYNC_EVENT_TYPE = 'FIZZ_V5_CLEAN';
 
 // --- ESPN API Configuration ---
@@ -43,8 +43,9 @@ const DEFAULT_SCORING = {
 
 // Initialize Supabase (Using standard CDN global)
 const SUPABASE_URL = 'https://rchbzcfhnhshbvtjtfay.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJjaGJ6Y2ZobmhzaGJ2dGp0ZmF5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYzNDI2NTAsImV4cCI6MjA4MTkxODY1MH0.jpsdpVw1DSNM8ZpqfzjK-H86w3uMRBgKqT1m65h7pfg';
 const supabase = (window.supabase) ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+
+let ELIMINATED_TEAMS = new Set();
 
 // We use a "Local Mirror" of the cloud ID (Sync Code)
 // Persistence handled via state.leagues[i].syncCode
@@ -740,6 +741,7 @@ window.syncLivePlayoffStats = async function () {
     console.log('📡 Syncing Live Playoff Stats (v5.6.0) from 2026 ESPN Boxscores...');
     try {
         // 1. Reset all playoff stats to 0 before accumulating
+        ELIMINATED_TEAMS = new Set();
         PLAYERS.forEach(p => {
             ['passYds', 'passTD', 'ints', 'rushYds', 'rushTD', 'recs', 'recYds', 'recTD', 'fumbles', 'pass2pt', 'rush2pt', 'rec2pt'].forEach(key => {
                 p[key] = 0;
@@ -760,6 +762,14 @@ window.syncLivePlayoffStats = async function () {
             const isPlayoffDate = new Date(g.date) >= new Date('2026-01-10T00:00:00Z');
             return isStarted && isPlayoffDate;
         });
+
+        // 2b. Track Eliminated Teams (Losers of Final games from Jan 10 onwards)
+        games.filter(g => g.status.type.description === 'Final' && new Date(g.date) >= new Date('2026-01-10T00:00:00Z'))
+            .forEach(g => {
+                const competitors = g.competitions[0].competitors;
+                const loser = competitors.find(c => c.winner === false);
+                if (loser) ELIMINATED_TEAMS.add(loser.team.abbreviation);
+            });
 
         if (validGames.length === 0) {
             console.log('No live or completed 2026 playoff games found (starting Jan 10).');
@@ -1184,26 +1194,55 @@ function renderLeagueStats(l) {
                 ` : ''}
         </div>
         <div class="table-row table-header">
-            <div>TEAM</div>
-            <div>SCORE</div>
-            <div>PLAYERS REMAINING</div>
+            <div style="cursor:pointer;" onclick="setLeagueSort('name')">TEAM ${getLeagueSortIcon('name')}</div>
+            <div style="cursor:pointer;" onclick="setLeagueSort('score')">SCORE ${getLeagueSortIcon('score')}</div>
+            <div style="cursor:pointer;" onclick="setLeagueSort('rem')">PLAYERS REMAINING ${getLeagueSortIcon('rem')}</div>
         </div>
     `;
 
-    html += l.teams.map(t => {
+    const teamData = l.teams.map(t => {
         // Team score is always based on Playoff Stats (root properties)
         const teamScore = t.roster.reduce((sum, rp) => {
             const p = PLAYERS.find(pp => pp.id === rp.id);
             return sum + (p ? calculateFantasyPoints(p, false) : 0);
         }, 0);
 
+        const playersRemaining = t.roster.filter(rp => {
+            const p = PLAYERS.find(pp => pp.id === rp.id);
+            return p && !ELIMINATED_TEAMS.has(p.team);
+        }).length;
+
+        return {
+            name: t.name,
+            score: teamScore,
+            rem: playersRemaining,
+            roster: t.roster
+        };
+    });
+
+    // Default sorting in state if not set
+    state.leagueSort = state.leagueSort || { col: 'score', dir: 'desc' };
+
+    teamData.sort((a, b) => {
+        let valA = a[state.leagueSort.col];
+        let valB = b[state.leagueSort.col];
+        if (typeof valA === 'string') {
+            valA = valA.toLowerCase();
+            valB = valB.toLowerCase();
+        }
+        if (valA < valB) return state.leagueSort.dir === 'desc' ? 1 : -1;
+        if (valA > valB) return state.leagueSort.dir === 'desc' ? -1 : 1;
+        return 0;
+    });
+
+    html += teamData.map(t => {
         return `
             <div class="table-row">
                 <div style="font-weight: 800; color: #1a73e8; cursor: pointer;" onclick="viewTeamRoster('${t.name}')">
                     ${t.name} ${t.name.toLowerCase() === state.currentUser.toLowerCase() ? '<span style="color:var(--red)">(YOU)</span>' : ''}
                 </div>
-                <div style="font-weight: 800; color: var(--red);">${teamScore.toFixed(2)}</div>
-                <div style="font-size: 0.8rem; color: var(--gray); font-weight: 600;">${SLOTS.length - t.roster.length} UNDRAFTED</div>
+                <div style="font-weight: 800; color: var(--red);">${t.score.toFixed(2)}</div>
+                <div style="font-size: 0.8rem; color: var(--gray); font-weight: 600;">${t.rem} PLAYERS</div>
             </div>
         `;
     }).join('');
@@ -1224,6 +1263,23 @@ function renderLeagueStats(l) {
         draftBtn.innerText = "START DRAFT";
         draftBtn.classList.toggle('hidden', !isAdmin());
     }
+}
+
+window.setLeagueSort = (col) => {
+    if (!state.leagueSort) state.leagueSort = { col: 'score', dir: 'desc' };
+    if (state.leagueSort.col === col) {
+        state.leagueSort.dir = state.leagueSort.dir === 'asc' ? 'desc' : 'asc';
+    } else {
+        state.leagueSort.col = col;
+        state.leagueSort.dir = 'desc';
+    }
+    const l = getActiveLeague();
+    if (l) renderLeagueStats(l);
+};
+
+function getLeagueSortIcon(col) {
+    if (!state.leagueSort || state.leagueSort.col !== col) return '<span style="opacity:0.2;">⇅</span>';
+    return state.leagueSort.dir === 'desc' ? '↓' : '↑';
 }
 
 function renderSettings(l) {
