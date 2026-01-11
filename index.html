@@ -133,8 +133,9 @@
                         <div class="search-container">
                             <input type="text" id="player-search" placeholder="Search player..." class="w-full">
                         </div>
-                        <div class="live-status-container">
-                            <div class="live-indicator"
+                        <div class="live-status-container" onclick="window.syncLivePlayoffStats()"
+                            style="cursor: pointer;" title="Refresh Live Stats">
+                            <div class="live-indicator" id="stats-live-indicator"
                                 style="width: 8px; height: 8px; border-radius: 50%; background: #ff3b30; transition: background 0.3s;">
                             </div>
                             <div id="draft-status-badge" class="badge-red">Pick 1</div>

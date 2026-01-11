@@ -4,7 +4,7 @@
  */
 
 // --- Constants & Pool Data ---
-const VERSION = '5.4.1'; // Fixed Roster Stats Leak
+const VERSION = '5.6.0'; // 2026 Live Playoff Stats
 const SYNC_EVENT_TYPE = 'FIZZ_V5_CLEAN';
 
 // --- ESPN API Configuration ---
@@ -732,6 +732,127 @@ async function syncStatsFromESPN() {
     }
 }
 
+/**
+ * Fetches live Boxscores for all current/completed playoff games (2026)
+ * and updates player stats (root properties) in real-time.
+ */
+window.syncLivePlayoffStats = async function () {
+    console.log('📡 Syncing Live Playoff Stats (v5.6.0) from 2026 ESPN Boxscores...');
+    try {
+        // 1. Reset all playoff stats to 0 before accumulating
+        PLAYERS.forEach(p => {
+            ['passYds', 'passTD', 'ints', 'rushYds', 'rushTD', 'recs', 'recYds', 'recTD', 'fumbles', 'pass2pt', 'rush2pt', 'rec2pt'].forEach(key => {
+                p[key] = 0;
+            });
+        });
+
+        // 2. Fetch Scoreboard for 2026 Season Playoffs (seasontype 3)
+        const scoreboardResponse = await fetch('https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?limit=1000&dates=2026&seasontype=3');
+        const scoreboardData = await scoreboardResponse.json();
+        const games = scoreboardData.events || [];
+
+        // Filter for games that have started or finished
+        const validGames = games.filter(g =>
+            g.status.type.state === 'in' ||
+            g.status.type.state === 'post' ||
+            ['In Progress', 'Final', 'Halftime', 'End of Period'].includes(g.status.type.description)
+        );
+
+        if (validGames.length === 0) {
+            console.log('No live or completed 2026 playoff games found.');
+            return;
+        }
+
+        console.log(`🏈 Processing ${validGames.length} valid 2026 playoff games...`);
+
+        // Create player lookup map
+        const pMap = new Map();
+        PLAYERS.forEach(p => pMap.set(p.name.toLowerCase(), p));
+
+        for (const g of validGames) {
+            try {
+                // A. Core Boxscore Stats
+                const bxResponse = await fetch(`https://cdn.espn.com/core/nfl/boxscore?xhr=1&gameId=${g.id}`);
+                const bxData = await bxResponse.json();
+                const playersData = bxData.gamepackageJSON?.boxscore?.players || [];
+
+                playersData.forEach(teamData => {
+                    teamData.statistics.forEach(cat => {
+                        const catName = cat.name;
+                        const labels = cat.labels;
+                        cat.athletes.forEach(athleteData => {
+                            const p = pMap.get(athleteData.athlete.displayName.toLowerCase());
+                            if (p) {
+                                athleteData.stats.forEach((val, idx) => {
+                                    const rawVal = val.toString().replace(',', '');
+                                    const num = parseFloat(rawVal) || 0;
+                                    const label = labels[idx];
+
+                                    if (catName === 'passing') {
+                                        if (label === 'YDS') p.passYds += num;
+                                        if (label === 'TD') p.passTD += num;
+                                        if (label === 'INT') p.ints += num;
+                                    } else if (catName === 'rushing') {
+                                        if (label === 'YDS') p.rushYds += num;
+                                        if (label === 'TD') p.rushTD += num;
+                                    } else if (catName === 'receiving') {
+                                        if (label === 'REC') p.recs += num;
+                                        if (label === 'YDS') p.recYds += num;
+                                        if (label === 'TD') p.recTD += num;
+                                    } else if (catName === 'fumbles') {
+                                        if (label === 'LOST') p.fumbles += num;
+                                    }
+                                });
+                            }
+                        });
+                    });
+                });
+
+                // B. Summary for 2pt Conversions
+                const sumResponse = await fetch(`https://site.api.espn.com/apis/site/v2/sports/football/nfl/summary?event=${g.id}`);
+                const sumData = await sumResponse.json();
+                (sumData.scoringPlays || []).forEach(play => {
+                    const text = play.text || '';
+                    if (text.includes('Two-Point Conversion')) {
+                        const match = text.match(/\(([^)]+)\)/);
+                        if (match) {
+                            const inner = match[1];
+                            if (inner.includes('Pass to')) {
+                                const action = inner.replace('for Two-Point Conversion', '').trim();
+                                const parts = action.split(' Pass to ');
+                                if (parts.length === 2) {
+                                    const pPass = pMap.get(parts[0].trim().toLowerCase());
+                                    const pRec = pMap.get(parts[1].trim().toLowerCase());
+                                    if (pPass) pPass.pass2pt = (pPass.pass2pt || 0) + 1;
+                                    if (pRec) pRec.rec2pt = (pRec.rec2pt || 0) + 1;
+                                }
+                            } else if (inner.includes('Rush')) {
+                                const rusher = inner.replace('Rush', '').replace('for Two-Point Conversion', '').trim();
+                                const pRush = pMap.get(rusher.toLowerCase());
+                                if (pRush) pRush.rush2pt = (pRush.rush2pt || 0) + 1;
+                            }
+                        }
+                    }
+                });
+
+            } catch (err) {
+                console.warn(`2026 Sync failed for Game ID: ${g.id}`, err);
+            }
+        }
+
+        // Final Step: Recalculate Playoff Points for all players
+        PLAYERS.forEach(p => {
+            p.fantasyPts = calculateFantasyPoints(p, false);
+        });
+
+        console.log('✅ 2026 Live Stat Sync Success.');
+        updateUI();
+
+    } catch (err) {
+        console.error('Fatal 2026 Live Sync Error:', err);
+    }
+}
+
 function calculateFantasyPoints(p, useHistorical = false) {
     const l = getActiveLeague();
     const s = l?.scoring || DEFAULT_SCORING;
@@ -818,6 +939,12 @@ async function initApp() {
     console.log(`FF v${VERSION} Initializing...`);
     normalizePlayers();
     syncStatsFromESPN();
+    syncLivePlayoffStats();
+
+    // Refresh live stats every 60 seconds
+    setInterval(() => {
+        if (state.currentUser) syncLivePlayoffStats();
+    }, 60000);
 
     const vEl = document.getElementById('app-version');
     if (vEl) vEl.innerText = `v${VERSION}`;
