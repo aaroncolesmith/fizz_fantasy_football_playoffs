@@ -4,7 +4,7 @@
  */
 
 // --- Constants & Pool Data ---
-const VERSION = '5.9.0'; // Global Players List View
+const VERSION = '5.11.0'; // Name Normalization Fix
 const SYNC_EVENT_TYPE = 'FIZZ_V5_CLEAN';
 
 // --- ESPN API Configuration ---
@@ -371,6 +371,11 @@ let tempFilters = [];
 let dropdownSearch = '';
 
 // --- Helpers ---
+function normalizeName(name) {
+    if (!name) return '';
+    return name.toLowerCase().replace(/[^a-z0-9]/g, '').trim();
+}
+
 function isAdmin() {
     return state.currentUser && state.currentUser.toLowerCase() === 'aaron';
 }
@@ -699,7 +704,7 @@ async function syncStatsFromESPN() {
         let matches = 0;
         PLAYERS.forEach(p => {
             const ep = espnPlayers.find(m =>
-                (m.player?.fullName || m.fullName)?.toLowerCase() === p.name.toLowerCase()
+                normalizeName(m.player?.fullName || m.fullName) === normalizeName(p.name)
             );
 
             if (ep) {
@@ -784,7 +789,7 @@ window.syncLivePlayoffStats = async function () {
 
         // Create player lookup map
         const pMap = new Map();
-        PLAYERS.forEach(p => pMap.set(p.name.toLowerCase(), p));
+        PLAYERS.forEach(p => pMap.set(normalizeName(p.name), p));
 
         for (const g of validGames) {
             try {
@@ -798,7 +803,7 @@ window.syncLivePlayoffStats = async function () {
                         const catName = cat.name;
                         const labels = cat.labels;
                         cat.athletes.forEach(athleteData => {
-                            const p = pMap.get(athleteData.athlete.displayName.toLowerCase());
+                            const p = pMap.get(normalizeName(athleteData.athlete.displayName));
                             if (p) {
                                 athleteData.stats.forEach((val, idx) => {
                                     const rawVal = val.toString().replace(',', '');
@@ -838,14 +843,14 @@ window.syncLivePlayoffStats = async function () {
                                 const action = inner.replace('for Two-Point Conversion', '').trim();
                                 const parts = action.split(' Pass to ');
                                 if (parts.length === 2) {
-                                    const pPass = pMap.get(parts[0].trim().toLowerCase());
-                                    const pRec = pMap.get(parts[1].trim().toLowerCase());
+                                    const pPass = pMap.get(normalizeName(parts[0]));
+                                    const pRec = pMap.get(normalizeName(parts[1]));
                                     if (pPass) pPass.pass2pt = (pPass.pass2pt || 0) + 1;
                                     if (pRec) pRec.rec2pt = (pRec.rec2pt || 0) + 1;
                                 }
                             } else if (inner.includes('Rush')) {
                                 const rusher = inner.replace('Rush', '').replace('for Two-Point Conversion', '').trim();
-                                const pRush = pMap.get(rusher.toLowerCase());
+                                const pRush = pMap.get(normalizeName(rusher));
                                 if (pRush) pRush.rush2pt = (pRush.rush2pt || 0) + 1;
                             }
                         }
@@ -1182,20 +1187,18 @@ function renderLeagueStats(l) {
     }
 
     let html = `
-        <div class="d-flex justify-between items-center mb-6">
-            <h2 style="font-weight: 800; letter-spacing: -1px; text-transform: uppercase; display: flex; align-items: center; gap: 10px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+            <h2 style="font-weight: 800; letter-spacing: -1px; text-transform: uppercase; display: flex; align-items: center; gap: 10px; margin: 0;">
                 ${l.name}
                 <div class="live-indicator" style="width: 8px; height: 8px; border-radius: 50%; background: ${syncStatus === 'SUBSCRIBED' ? '#4cd964' : '#ff3b30'};"></div>
             </h2>
-                ${l.syncCode ? `
-                <div style="text-align:right;">
-                    <button onclick="toggleLeagueCode(event)" class="btn-mini" style="opacity: 0.3; border:none; background:transparent;">Show Code</button>
-                    <div class="league-code-container sync-code-badge hidden" style="margin-top:4px;">
-                        <span>${l.syncCode}</span>
-                        <button onclick="window.copyLeagueCode(event, '${l.syncCode}')" class="btn-mini text-link" style="padding:0; margin-left:8px; font-size:0.6rem;">[COPY]</button>
-                    </div>
-                </div>
+            <div class="header-actions" style="display: flex; gap: 8px;">
+                <button class="btn outline-pill btn-mini" style="font-weight: 800; padding: 6px 14px; font-size: 0.7rem;" onclick="navigate('players-list', '${l.id}')">PLAYERS</button>
+                <button class="btn outline-pill btn-mini" style="font-weight: 800; padding: 6px 14px; font-size: 0.7rem;" onclick="navigate('settings', '${l.id}')">SETTINGS</button>
+                ${(l.draftOrder && l.draftOrder.length > 0) ? `
+                    <button class="btn outline-pill btn-mini" style="font-weight: 800; padding: 6px 14px; font-size: 0.7rem;" onclick="navigate('draft', '${l.id}')">DRAFT RESULTS</button>
                 ` : ''}
+            </div>
         </div>
         <div class="table-row table-header">
             <div style="cursor:pointer;" onclick="setLeagueSort('name')">TEAM ${getLeagueSortIcon('name')}</div>
@@ -1265,19 +1268,18 @@ function renderLeagueStats(l) {
     container.innerHTML = html;
 
     // Admin restrictions
-    document.getElementById('add-team-btn').classList.toggle('hidden', !isAdmin());
-    document.getElementById('save-state-btn').classList.toggle('hidden', !isAdmin());
-
+    const addTeamBtn = document.getElementById('add-team-btn');
+    const saveStateBtn = document.getElementById('save-state-btn');
+    const playersBtn = document.getElementById('show-players-btn');
+    const settingsBtn = document.getElementById('show-settings-btn');
     const draftBtn = document.getElementById('start-draft-btn');
-    const isStarted = l.draftOrder && l.draftOrder.length > 0;
 
-    if (isStarted) {
-        draftBtn.innerText = "ENTER DRAFT";
-        draftBtn.classList.remove('hidden');
-    } else {
-        draftBtn.innerText = "START DRAFT";
-        draftBtn.classList.toggle('hidden', !isAdmin());
-    }
+    if (addTeamBtn) addTeamBtn.classList.add('hidden'); // Retired in v5.10.0
+    if (playersBtn) playersBtn.classList.add('hidden'); // Moved to top
+    if (settingsBtn) settingsBtn.classList.add('hidden'); // Moved to top
+    if (draftBtn) draftBtn.classList.add('hidden'); // Moved to top
+
+    if (saveStateBtn) saveStateBtn.classList.toggle('hidden', !isAdmin());
 }
 
 window.setLeagueSort = (col) => {
@@ -1543,9 +1545,9 @@ function renderDropdownMenu(cat, items) {
 
     return `
         <div class="dropdown-menu" onclick="event.stopPropagation()">
-            <input type="text" class="dropdown-search" placeholder="Search..." value="${dropdownSearch}" 
-                   oninput="handleDropdownSearch(event, '${cat}')" autofocus>
-            
+            <input type="text" class="dropdown-search" placeholder="Search..." value="${dropdownSearch}"
+                oninput="handleDropdownSearch(event, '${cat}')" autofocus>
+
             <div class="dropdown-links">
                 <a onclick="setAllTemp('${cat}', true)">Select all</a>
                 <span style="color:var(--border)">|</span>
@@ -1666,7 +1668,7 @@ function renderPlayerList(l) {
         }
 
         if (state.filters.team.length > 0 && !state.filters.team.includes(p.team)) return false;
-        if (query && !p.name.toLowerCase().includes(query) && !p.team.toLowerCase().includes(query)) return false;
+        if (query && !normalizeName(p.name).includes(normalizeName(query)) && !normalizeName(p.team).includes(normalizeName(query))) return false;
         return true;
     });
 
@@ -1747,7 +1749,7 @@ function renderPlayerList(l) {
             <td class="stat-cell ${state.statTab === 'recYds' ? 'active' : ''}" style="text-align:center; padding: 0 10px;">${Math.round(hs.recYds || 0)}</td>
             <td class="stat-cell ${state.statTab === 'recTD' ? 'active' : ''}" style="text-align:center; padding: 0 10px;">${hs.recTD || 0}</td>
             <td class="action-cell" style="padding: 10px 20px; text-align:right;"></td>
-        `;
+    `;
 
         if (!isPicked && isMyTurn) {
             const team = l.teams.find(t => t.name.toLowerCase() === state.currentUser.toLowerCase());
@@ -1862,12 +1864,12 @@ function renderDraftOrder(l) {
 
     const upcoming = l.draftOrder.slice(l.currentPick, l.currentPick + 6);
     c.innerHTML = upcoming.map((p, i) => `
-        <div style="font-size: 0.75rem; margin-bottom: 6px; font-weight: 600; opacity: ${i === 0 ? 1 : 0.5}">
+        < div style = "font-size: 0.75rem; margin-bottom: 6px; font-weight: 600; opacity: ${i === 0 ? 1 : 0.5}" >
             ${l.currentPick + i + 1}. ${p.name} (R${p.round})
-        </div>
-    `).join('');
+        </div >
+        `).join('');
 
-    badge.innerText = `Pick ${l.currentPick + 1}`;
+    badge.innerText = `Pick ${l.currentPick + 1} `;
 }
 
 function renderRoster(l) {
@@ -1892,7 +1894,7 @@ function renderRoster(l) {
 
     // Build roster table with "Next Game" and cleaner aesthetics
     let tableHTML = `
-        <table class="simple-table roster-premium-table">
+        < table class="simple-table roster-premium-table" >
             <thead>
                 <tr>
                     <th style="padding: 14px 16px;">SLOT</th>
@@ -1953,8 +1955,8 @@ function renderRoster(l) {
 
     tableHTML += `
             </tbody>
-        </table>
-    `;
+        </table >
+        `;
 
     grid.innerHTML = tableHTML;
 }
@@ -1971,17 +1973,17 @@ function renderDraftFeed(l) {
     if (filterMenu) {
         const teams = l.teams || [];
         filterMenu.innerHTML = `
-            <div class="dropdown-item ${feedTeamFilter === null ? 'active' : ''}" 
-                 onclick="setFeedTeamFilter(null)">
-                All Teams
-            </div>
-            ${teams.map(t => `
+        < div class="dropdown-item ${feedTeamFilter === null ? 'active' : ''}" onclick = "setFeedTeamFilter(null)" >
+            All Teams
+            </div >
+        ${teams.map(t => `
                 <div class="dropdown-item ${feedTeamFilter === t.name ? 'active' : ''}" 
                      onclick="setFeedTeamFilter('${t.name}')">
                     ${t.name.toUpperCase()}
                 </div>
-            `).join('')}
-        `;
+            `).join('')
+            }
+    `;
     }
 
     // Update filter display
@@ -2047,9 +2049,9 @@ function renderDraftFeed(l) {
                 div.style.cssText += ' background: rgba(76, 217, 100, 0.1); border-left: 3px solid var(--green);';
             }
             div.innerHTML = `
-                <span style="font-weight: 700; color: ${event.isCurrent ? 'var(--green)' : 'var(--gray)'}; min-width: 80px;">PICK ${event.pickNum}</span>
-                <span style="flex: 1; text-align: right; font-weight: 800;">${event.owner.toUpperCase()} ${event.isCurrent ? '🏈' : ''}</span>
-            `;
+        < span style = "font-weight: 700; color: ${event.isCurrent ? 'var(--green)' : 'var(--gray)'}; min-width: 80px;" > PICK ${event.pickNum}</span >
+            <span style="flex: 1; text-align: right; font-weight: 800;">${event.owner.toUpperCase()} ${event.isCurrent ? '🏈' : ''}</span>
+    `;
         } else {
             // Past pick - show player info on one line
             const playerInfo = event.player
@@ -2057,10 +2059,10 @@ function renderDraftFeed(l) {
                 : 'Unknown Player';
 
             div.innerHTML = `
-                <span style="font-weight: 700; color: var(--gray); min-width: 80px;">#${event.pickNum}</span>
+        < span style = "font-weight: 700; color: var(--gray); min-width: 80px;" > #${event.pickNum}</span >
                 <span style="flex: 1; font-weight: 700;">${playerInfo}</span>
                 <span style="font-weight: 800; min-width: 120px; text-align: right;">${event.owner.toUpperCase()}</span>
-            `;
+    `;
         }
 
         feedEl.appendChild(div);
@@ -2138,7 +2140,7 @@ function setupListeners() {
             btn.innerText = originalText;
             btn.disabled = false;
             state.currentUser = null;
-            alert(`USER "${input}" NOT FOUND IN ANY CLOUD RECORDS. ENSURE YOU CREATED A LEAGUE ON YOUR OTHER DEVICE FIRST.`);
+            alert(`USER "${input}" NOT FOUND IN ANY CLOUD RECORDS.ENSURE YOU CREATED A LEAGUE ON YOUR OTHER DEVICE FIRST.`);
         }
     };
 
