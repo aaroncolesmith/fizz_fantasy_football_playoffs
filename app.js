@@ -4,7 +4,7 @@
  */
 
 // --- Constants & Pool Data ---
-const VERSION = '5.7.1'; // Eliminated Player Coloring
+const VERSION = '5.8.0'; // Avg Elim Pick Tracking
 const SYNC_EVENT_TYPE = 'FIZZ_V5_CLEAN';
 
 // --- ESPN API Configuration ---
@@ -1197,7 +1197,8 @@ function renderLeagueStats(l) {
         <div class="table-row table-header">
             <div style="cursor:pointer;" onclick="setLeagueSort('name')">TEAM ${getLeagueSortIcon('name')}</div>
             <div style="cursor:pointer;" onclick="setLeagueSort('score')">SCORE ${getLeagueSortIcon('score')}</div>
-            <div style="cursor:pointer;" onclick="setLeagueSort('rem')">PLAYERS REMAINING ${getLeagueSortIcon('rem')}</div>
+            <div style="cursor:pointer;" onclick="setLeagueSort('rem')">LIVING ${getLeagueSortIcon('rem')}</div>
+            <div style="cursor:pointer;" onclick="setLeagueSort('avgElimPick')">AVG ELIM PICK ${getLeagueSortIcon('avgElimPick')}</div>
         </div>
     `;
 
@@ -1213,10 +1214,19 @@ function renderLeagueStats(l) {
             return p && !ELIMINATED_TEAMS.has(p.team);
         }).length;
 
+        const eliminatedPicks = (l.picks || []).filter(pick =>
+            pick.owner === t.name &&
+            ELIMINATED_TEAMS.has(pick.team)
+        );
+        const avgElimPick = eliminatedPicks.length
+            ? eliminatedPicks.reduce((sum, p) => sum + p.pickNum, 0) / eliminatedPicks.length
+            : 0;
+
         return {
             name: t.name,
             score: teamScore,
             rem: playersRemaining,
+            avgElimPick: avgElimPick,
             roster: t.roster
         };
     });
@@ -1243,7 +1253,8 @@ function renderLeagueStats(l) {
                     ${t.name} ${t.name.toLowerCase() === state.currentUser.toLowerCase() ? '<span style="color:var(--red)">(YOU)</span>' : ''}
                 </div>
                 <div style="font-weight: 800; color: var(--red);">${t.score.toFixed(2)}</div>
-                <div style="font-size: 0.8rem; color: var(--gray); font-weight: 600;">${t.rem} PLAYERS</div>
+                <div style="font-size: 0.8rem; color: var(--gray); font-weight: 600;">${t.rem} LIVING</div>
+                <div style="font-size: 0.8rem; color: var(--gray); font-weight: 600;">${t.avgElimPick > 0 ? t.avgElimPick.toFixed(1) : '-'}</div>
             </div>
         `;
     }).join('');
