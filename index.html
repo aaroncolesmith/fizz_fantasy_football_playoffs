@@ -200,6 +200,19 @@
         <footer class="app-footer">
             <span id="app-version">v5.4.1</span>
         </footer>
+
+        <!-- Points Breakdown Modal -->
+        <div id="breakdown-modal" class="modal-overlay" onclick="window.closeBreakdown()">
+            <div class="modal-content" onclick="event.stopPropagation()">
+                <div class="modal-header">
+                    <h2 id="breakdown-player-name">PLAYER NAME</h2>
+                    <button class="btn-mini red" onclick="window.closeBreakdown()">CLOSE</button>
+                </div>
+                <div id="breakdown-list-container">
+                    <!-- Injected via JS -->
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>

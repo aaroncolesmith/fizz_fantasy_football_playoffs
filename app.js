@@ -909,7 +909,63 @@ function getPointsBreakdown(p, useHistorical = false) {
 
 window.showBreakdown = (pid, historical) => {
     const p = PLAYERS.find(x => x.id === pid);
-    if (p) alert(`${p.name} Points Breakdown:\n\n` + getPointsBreakdown(p, historical));
+    if (!p) return;
+
+    const modal = document.getElementById('breakdown-modal');
+    const nameEl = document.getElementById('breakdown-player-name');
+    const listEl = document.getElementById('breakdown-list-container');
+    if (!modal || !listEl) return;
+
+    nameEl.innerText = p.name.toUpperCase();
+
+    const l = getActiveLeague();
+    const s = l?.scoring || DEFAULT_SCORING;
+    const stats = historical ? (p.historicalStats || {}) : p;
+
+    const categories = [
+        { label: 'Passing Yards', val: stats.passYds, mult: s.passYds },
+        { label: 'Passing TDs', val: stats.passTD, mult: s.passTD },
+        { label: 'Interceptions', val: stats.ints, mult: s.ints },
+        { label: 'Rushing Yards', val: stats.rushYds, mult: s.rushYds },
+        { label: 'Rushing TDs', val: stats.rushTD, mult: s.rushTD },
+        { label: 'Receptions', val: stats.recs, mult: s.recs },
+        { label: 'Receiving Yards', val: stats.recYds, mult: s.recYds },
+        { label: 'Receiving TDs', val: stats.recTD, mult: s.recTD },
+        { label: 'Fumbles Lost', val: stats.fumbles, mult: s.fumbles },
+        { label: '2pt Passing', val: stats.pass2pt, mult: s.pass2pt },
+        { label: '2pt Rushing', val: stats.rush2pt, mult: s.rush2pt },
+        { label: '2pt Receiving', val: stats.rec2pt, mult: s.rec2pt }
+    ];
+
+    let html = '';
+    let total = 0;
+    categories.forEach(c => {
+        const points = (c.val || 0) * (c.mult || 0);
+        if (points !== 0 || c.val !== 0) {
+            html += `
+                <div class="breakdown-row">
+                    <span class="breakdown-label">${c.label} (${c.val || 0})</span>
+                    <span class="breakdown-value">${points > 0 ? '+' : ''}${points.toFixed(2)}</span>
+                </div>
+            `;
+            total += points;
+        }
+    });
+
+    html += `
+        <div class="breakdown-row">
+            <span class="breakdown-label">TOTAL FANTASY POINTS</span>
+            <span class="breakdown-value">${total.toFixed(2)}</span>
+        </div>
+    `;
+
+    listEl.innerHTML = html || '<div class="text-center p-8 opacity-50">No stats recorded yet.</div>';
+    modal.classList.add('active');
+};
+
+window.closeBreakdown = () => {
+    const modal = document.getElementById('breakdown-modal');
+    if (modal) modal.classList.remove('active');
 };
 
 function normalizePlayers() {
