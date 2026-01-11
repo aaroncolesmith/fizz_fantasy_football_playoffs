@@ -4,7 +4,7 @@
  */
 
 // --- Constants & Pool Data ---
-const VERSION = '5.8.1'; // ALIVE vs Eliminated
+const VERSION = '5.9.0'; // Global Players List View
 const SYNC_EVENT_TYPE = 'FIZZ_V5_CLEAN';
 
 // --- ESPN API Configuration ---
@@ -1067,6 +1067,7 @@ function updateUI() {
     if (state.view === 'league-detail') renderLeagueStats(l);
     if (state.view === 'draft') renderDraftUI(l);
     if (state.view === 'settings') renderSettings(l);
+    if (state.view === 'players-list') renderPlayersListPage(l);
     renderBreadcrumbs();
 }
 
@@ -1093,6 +1094,8 @@ function renderBreadcrumbs() {
             }
         } else if (state.view === 'settings') {
             html += `<span class="active">SETTINGS</span>`;
+        } else if (state.view === 'players-list') {
+            html += `<span class="active">PLAYERS</span>`;
         }
     } else if (state.view === 'new-league') {
         html += `<span class="active">NEW LEAGUE</span>`;
@@ -1293,6 +1296,117 @@ function getLeagueSortIcon(col) {
     if (!state.leagueSort || state.leagueSort.col !== col) return '<span style="opacity:0.2;">⇅</span>';
     return state.leagueSort.dir === 'desc' ? '↓' : '↑';
 }
+
+function renderPlayersListPage(l) {
+    const container = document.getElementById('players-list-table-container');
+    if (!container || !l) return;
+
+    // Default sorting
+    if (!state.playersListSort) state.playersListSort = { col: 'fantasyPts', dir: 'desc' };
+
+    const playerToTeamMap = {};
+    l.teams.forEach(t => {
+        t.roster.forEach(rp => {
+            playerToTeamMap[rp.id] = t.name;
+        });
+    });
+
+    const displayData = PLAYERS.map(p => {
+        const masterP = PLAYERS.find(mp => mp.id === p.id) || p;
+        const pts = calculateFantasyPoints(masterP, false);
+        const owner = playerToTeamMap[p.id] || 'UNDRAFTED';
+        const isEliminated = ELIMINATED_TEAMS.has(p.team);
+
+        return {
+            ...p,
+            fantasyPts: pts,
+            owner,
+            isEliminated
+        };
+    });
+
+    // Sort displayData
+    displayData.sort((a, b) => {
+        let valA = a[state.playersListSort.col];
+        let valB = b[state.playersListSort.col];
+
+        if (typeof valA === 'string') {
+            valA = (valA || '').toLowerCase();
+            valB = (valB || '').toLowerCase();
+        }
+
+        if (valA < valB) return state.playersListSort.dir === 'desc' ? 1 : -1;
+        if (valA > valB) return state.playersListSort.dir === 'desc' ? -1 : 1;
+        return 0;
+    });
+
+    const getSortIcon = (col) => {
+        if (state.playersListSort.col !== col) return '<span style="opacity:0.2;">⇅</span>';
+        return state.playersListSort.dir === 'desc' ? '↓' : '↑';
+    };
+
+    let html = `
+        <table class="simple-table roster-premium-table">
+            <thead>
+                <tr>
+                    <th style="cursor:pointer; padding: 14px 16px;" onclick="setPlayersSort('name')">PLAYER ${getSortIcon('name')}</th>
+                    <th style="cursor:pointer; padding: 14px 16px; text-align: center;" onclick="setPlayersSort('pos')">POS ${getSortIcon('pos')}</th>
+                    <th style="cursor:pointer; padding: 14px 16px; text-align: center;" onclick="setPlayersSort('team')">NFL TEAM ${getSortIcon('team')}</th>
+                    <th style="cursor:pointer; padding: 14px 16px; text-align: center;" onclick="setPlayersSort('owner')">DRAFTED BY ${getSortIcon('owner')}</th>
+                    <th style="cursor:pointer; padding: 14px 16px; text-align: center; color: var(--red);" onclick="setPlayersSort('fantasyPts')">POINTS ${getSortIcon('fantasyPts')}</th>
+                    <th style="text-align: center; padding: 14px 16px;">PASS YDS</th>
+                    <th style="text-align: center; padding: 14px 16px;">PASS TD</th>
+                    <th style="text-align: center; padding: 14px 16px;">RUSH YDS</th>
+                    <th style="text-align: center; padding: 14px 16px;">RUSH TD</th>
+                    <th style="text-align: center; padding: 14px 16px;">RECS</th>
+                    <th style="text-align: center; padding: 14px 16px;">REC TD</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+
+    html += displayData.map(p => {
+        const rowStyle = p.isEliminated ? 'background: #fff5f5;' : '';
+        const ownerStyle = p.owner === 'UNDRAFTED' ? 'color: var(--gray); font-style: italic;' : 'font-weight: 800; color: #1a73e8;';
+
+        return `
+            <tr style="${rowStyle}">
+                <td style="padding: 14px 16px; font-weight: 800;">
+                    <div class="p-name" style="font-size:0.9rem;">${p.name}</div>
+                </td>
+                <td style="padding: 14px 16px; font-weight: 800; color: var(--gray); text-align: center;">${p.pos}</td>
+                <td style="padding: 14px 16px; font-weight: 800; color: var(--gray); text-align: center;">${p.team}</td>
+                <td style="padding: 14px 16px; ${ownerStyle} text-align: center;">${p.owner}</td>
+                <td style="text-align: center; padding: 14px 16px; font-weight: 800; color: var(--red); font-size: 0.9rem; cursor:pointer;" onclick="showBreakdown(${p.id}, false)">${p.fantasyPts.toFixed(2)}</td>
+                <td style="text-align: center; padding: 14px 16px; font-size: 0.85rem; font-weight: 600;">${Math.round(p.passYds || 0).toLocaleString()}</td>
+                <td style="text-align: center; padding: 14px 16px; font-size: 0.85rem; font-weight: 600;">${p.passTD || 0}</td>
+                <td style="text-align: center; padding: 14px 16px; font-size: 0.85rem; font-weight: 600;">${Math.round(p.rushYds || 0).toLocaleString()}</td>
+                <td style="text-align: center; padding: 14px 16px; font-size: 0.85rem; font-weight: 600;">${p.rushTD || 0}</td>
+                <td style="text-align: center; padding: 14px 16px; font-size: 0.85rem; font-weight: 600;">${p.recs || 0}</td>
+                <td style="text-align: center; padding: 14px 16px; font-size: 0.85rem; font-weight: 600;">${p.recTD || 0}</td>
+            </tr>
+        `;
+    }).join('');
+
+    html += `
+            </tbody>
+        </table>
+    `;
+
+    container.innerHTML = html;
+}
+
+window.setPlayersSort = (col) => {
+    if (!state.playersListSort) state.playersListSort = { col: 'fantasyPts', dir: 'desc' };
+    if (state.playersListSort.col === col) {
+        state.playersListSort.dir = state.playersListSort.dir === 'asc' ? 'desc' : 'asc';
+    } else {
+        state.playersListSort.col = col;
+        state.playersListSort.dir = 'desc';
+    }
+    const l = getActiveLeague();
+    if (l) renderPlayersListPage(l);
+};
 
 function renderSettings(l) {
     const list = document.getElementById('scoring-settings-list');
@@ -2096,6 +2210,11 @@ function setupListeners() {
     };
 
     // League Detail
+    document.getElementById('show-players-btn').onclick = () => {
+        const l = getActiveLeague();
+        navigate('players-list', l.id);
+    };
+
     document.getElementById('add-team-btn').onclick = () => {
         const name = prompt("TEAM OWNER NAME:");
         if (!name) return;

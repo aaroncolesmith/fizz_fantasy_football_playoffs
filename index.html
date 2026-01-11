@@ -95,9 +95,17 @@
 
                 <div class="actions-footer flex-center gap-4 mt-12">
                     <button id="start-draft-btn" class="btn primary">Start Draft</button>
+                    <button id="show-players-btn" class="btn outline-pill">Players</button>
                     <button id="show-settings-btn" class="btn outline-pill">Settings</button>
                     <button id="add-team-btn" class="btn outline-pill">+ Team</button>
                     <button id="save-state-btn" class="btn primary">Save Changes</button>
+                </div>
+            </section>
+
+            <!-- Global Players List View -->
+            <section id="players-list-view" class="container hidden">
+                <div class="card glass no-padding" style="overflow-x: auto;">
+                    <div id="players-list-table-container"></div>
                 </div>
             </section>
 
