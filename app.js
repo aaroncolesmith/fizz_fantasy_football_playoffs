@@ -4,7 +4,7 @@
  */
 
 // --- Constants & Pool Data ---
-const VERSION = '5.12.1'; // Eliminated Emoji Update
+const VERSION = '5.12.2'; // Consistent Emojis
 const SYNC_EVENT_TYPE = 'FIZZ_V5_CLEAN';
 
 // --- ESPN API Configuration ---
@@ -1926,7 +1926,7 @@ function renderRoster(l) {
             const pts = calculateFantasyPoints(masterP, false);
             const isInjured = !!INJURED_PLAYERS[masterP.id];
             const isEliminated = ELIMINATED_TEAMS.has(masterP.team) || isInjured;
-            const nextGame = isInjured ? INJURED_PLAYERS[masterP.id] : (isEliminated ? '❌ ELIMINATED' : (TEAM_SCHEDULE[masterP.team] || 'TBD'));
+            const nextGame = isInjured ? INJURED_PLAYERS[masterP.id] : (isEliminated ? 'ELIMINATED ❌' : (TEAM_SCHEDULE[masterP.team] || 'TBD'));
             const rowStyle = isEliminated ? 'background: #fff5f5;' : '';
 
             tableHTML += `
