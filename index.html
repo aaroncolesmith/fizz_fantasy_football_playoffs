@@ -107,6 +107,18 @@
                 <div class="card glass no-padding" style="overflow-x: auto;">
                     <div id="players-list-table-container"></div>
                 </div>
+                <!-- Debug Info in Players View -->
+                <div class="mt-8 pt-4" style="border-top: 1px solid var(--border);">
+                    <details>
+                        <summary
+                            style="font-size: 0.7rem; color: var(--gray); cursor: pointer; font-weight: 800; text-align: center;">
+                            SYSTEM STATUS</summary>
+                        <div id="system-debug-content-players"
+                            class="debug-content text-left max-w-sm mx-auto mt-4 px-4">
+                            <!-- Injected via JS -->
+                        </div>
+                    </details>
+                </div>
             </section>
 
             <!-- Settings View -->
@@ -206,7 +218,7 @@
             </section>
         </main>
         <footer class="app-footer">
-            <span id="app-version">v5.13.0</span>
+            <span id="app-version">v5.13.1</span>
         </footer>
 
         <!-- Points Breakdown Modal -->

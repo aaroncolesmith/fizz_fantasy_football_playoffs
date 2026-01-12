@@ -4,7 +4,7 @@
  */
 
 // --- Constants & Pool Data ---
-const VERSION = '5.13.0'; // Name Audit & Suffix Support
+const VERSION = '5.13.1'; // System Status Visibility Update
 const SYNC_EVENT_TYPE = 'FIZZ_V5_CLEAN';
 
 // --- ESPN API Configuration ---
@@ -2313,8 +2313,12 @@ function setupListeners() {
 }
 
 function updateDebugInfo() {
-    const c = document.getElementById('system-debug-content');
-    if (!c) return;
+    const containers = [
+        document.getElementById('system-debug-content'),
+        document.getElementById('system-debug-content-players')
+    ].filter(el => !!el);
+
+    if (containers.length === 0) return;
 
     const users = [];
     state.leagues.forEach(l => {
@@ -2322,7 +2326,7 @@ function updateDebugInfo() {
         l.teams.forEach(t => users.push(t.name));
     });
 
-    c.innerHTML = `
+    const html = `
         <div class="mb-2"><strong>VER:</strong> ${VERSION}</div>
         <div class="mb-2"><strong>LEAGUES:</strong> ${state.leagues.length}</div>
         <div class="mb-4"><strong>AUTH:</strong> ${[...new Set(users)].join(', ') || 'NONE'}</div>
@@ -2334,8 +2338,10 @@ function updateDebugInfo() {
             </div>
         ` : ''}
 
-        <button id="debug-force-sync" onclick="forceCloudSync()" class="btn primary p-2 w-full" style="font-size: 0.6rem;">Force Cloud Sync</button>
+        <button onclick="forceCloudSync()" class="btn primary p-2 w-full" style="font-size: 0.6rem;">Force Cloud Sync</button>
     `;
+
+    containers.forEach(c => c.innerHTML = html);
 }
 
 // Start
