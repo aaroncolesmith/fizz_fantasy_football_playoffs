@@ -4,7 +4,7 @@
  */
 
 // --- Constants & Pool Data ---
-const VERSION = '5.12.2'; // Consistent Emojis
+const VERSION = '5.13.0'; // Name Audit & Suffix Support
 const SYNC_EVENT_TYPE = 'FIZZ_V5_CLEAN';
 
 // --- ESPN API Configuration ---
@@ -361,7 +361,8 @@ let state = {
         pos: ['QB', 'RB', 'WR', 'TE', 'FLEX'],
         team: [],
         avail: ['undrafted']
-    }
+    },
+    unmatchedAudit: [] // Audit for players found in ESPN but not in APP
 };
 
 // Expose state for console access
@@ -376,7 +377,11 @@ let dropdownSearch = '';
 // --- Helpers ---
 function normalizeName(name) {
     if (!name) return '';
-    return name.toLowerCase().replace(/[^a-z0-9]/g, '').trim();
+    // Remove common suffixes like Jr., Sr., III, etc.
+    let n = name.toLowerCase();
+    n = n.replace(/\b(jr|sr|ii|iii|iv|v)\b/g, '');
+    // Standard cleaning: remove all non-alphanumeric and trim
+    return n.replace(/[^a-z0-9]/g, '').trim();
 }
 
 function isAdmin() {
@@ -794,6 +799,8 @@ window.syncLivePlayoffStats = async function () {
         const pMap = new Map();
         PLAYERS.forEach(p => pMap.set(normalizeName(p.name), p));
 
+        const unmatchedAuditMap = new Map(); // displayName -> 1
+
         for (const g of validGames) {
             try {
                 // A. Core Boxscore Stats
@@ -828,6 +835,13 @@ window.syncLivePlayoffStats = async function () {
                                         if (label === 'LOST') p.fumbles += num;
                                     }
                                 });
+                            } else {
+                                // AUDIT: Player not found in pMap, check if they have any stats
+                                const hasStats = athleteData.stats.some(v => parseFloat(v.toString().replace(',', '')) > 0);
+                                if (hasStats) {
+                                    const name = athleteData.athlete.displayName;
+                                    unmatchedAuditMap.set(name, (unmatchedAuditMap.get(name) || 0) + 1);
+                                }
                             }
                         });
                     });
@@ -870,8 +884,18 @@ window.syncLivePlayoffStats = async function () {
             p.fantasyPts = calculateFantasyPoints(p, false);
         });
 
+        // Update Audit State
+        state.unmatchedAudit = [...unmatchedAuditMap.entries()]
+            .map(([name, count]) => ({ name, count }))
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 10);
+
         console.log('✅ 2026 Live Stat Sync Success.');
+        if (state.unmatchedAudit.length > 0) {
+            console.warn('⚠️ UNMATCHED PLAYERS FOUND WITH STATS:', state.unmatchedAudit);
+        }
         updateUI();
+        updateDebugInfo();
 
     } catch (err) {
         console.error('Fatal 2026 Live Sync Error:', err);
@@ -2302,6 +2326,14 @@ function updateDebugInfo() {
         <div class="mb-2"><strong>VER:</strong> ${VERSION}</div>
         <div class="mb-2"><strong>LEAGUES:</strong> ${state.leagues.length}</div>
         <div class="mb-4"><strong>AUTH:</strong> ${[...new Set(users)].join(', ') || 'NONE'}</div>
+        
+        ${state.unmatchedAudit && state.unmatchedAudit.length > 0 ? `
+            <div class="mb-4 p-2 bg-yellow-100 rounded border border-yellow-300" style="font-size: 0.65rem; background: #fffbeb; border: 1px solid #fbd38d; border-radius: 4px; padding: 8px;">
+                <div class="font-bold mb-1" style="font-weight: 800; color: #975a16;">⚠️ UNMATCHED (ESPN STATS)</div>
+                ${state.unmatchedAudit.map(a => `<div style="display: flex; justify-content: space-between;"><span>${a.name}</span> <span style="opacity: 0.5;">(${a.count} cats)</span></div>`).join('')}
+            </div>
+        ` : ''}
+
         <button id="debug-force-sync" onclick="forceCloudSync()" class="btn primary p-2 w-full" style="font-size: 0.6rem;">Force Cloud Sync</button>
     `;
 }
