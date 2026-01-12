@@ -4,7 +4,7 @@
  */
 
 // --- Constants & Pool Data ---
-const VERSION = '5.11.2'; // UI Rendering Fixes
+const VERSION = '5.12.0'; // Manual Injury Elimination
 const SYNC_EVENT_TYPE = 'FIZZ_V5_CLEAN';
 
 // --- ESPN API Configuration ---
@@ -47,6 +47,9 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const supabase = (window.supabase) ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
 
 let ELIMINATED_TEAMS = new Set();
+const INJURED_PLAYERS = {
+    162: 'Achilles Eliminated 🩼' // George Kittle 
+};
 
 // We use a "Local Mirror" of the cloud ID (Sync Code)
 // Persistence handled via state.leagues[i].syncCode
@@ -1217,7 +1220,7 @@ function renderLeagueStats(l) {
 
         const playersRemaining = t.roster.filter(rp => {
             const p = PLAYERS.find(pp => pp.id === rp.id);
-            return p && !ELIMINATED_TEAMS.has(p.team);
+            return p && !ELIMINATED_TEAMS.has(p.team) && !INJURED_PLAYERS[p.id];
         }).length;
 
         const eliminatedPicks = (l.picks || []).filter(pick =>
@@ -1317,7 +1320,7 @@ function renderPlayersListPage(l) {
         const masterP = PLAYERS.find(mp => mp.id === p.id) || p;
         const pts = calculateFantasyPoints(masterP, false);
         const owner = playerToTeamMap[p.id] || 'UNDRAFTED';
-        const isEliminated = ELIMINATED_TEAMS.has(p.team);
+        const isEliminated = ELIMINATED_TEAMS.has(p.team) || !!INJURED_PLAYERS[p.id];
 
         return {
             ...p,
@@ -1921,8 +1924,9 @@ function renderRoster(l) {
             // Always lookup the latest player stats from master array (which is zeroed for playoffs)
             const masterP = PLAYERS.find(mp => mp.id === p.id) || p;
             const pts = calculateFantasyPoints(masterP, false);
-            const isEliminated = ELIMINATED_TEAMS.has(masterP.team);
-            const nextGame = isEliminated ? 'ELIMINATED' : (TEAM_SCHEDULE[masterP.team] || 'TBD');
+            const isInjured = !!INJURED_PLAYERS[masterP.id];
+            const isEliminated = ELIMINATED_TEAMS.has(masterP.team) || isInjured;
+            const nextGame = isInjured ? INJURED_PLAYERS[masterP.id] : (isEliminated ? 'ELIMINATED' : (TEAM_SCHEDULE[masterP.team] || 'TBD'));
             const rowStyle = isEliminated ? 'background: #fff5f5;' : '';
 
             tableHTML += `
