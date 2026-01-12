@@ -4,7 +4,7 @@
  */
 
 // --- Constants & Pool Data ---
-const VERSION = '5.13.1'; // System Status Visibility Update
+const VERSION = '5.13.2'; // Refined Name Audit
 const SYNC_EVENT_TYPE = 'FIZZ_V5_CLEAN';
 
 // --- ESPN API Configuration ---
@@ -836,12 +836,22 @@ window.syncLivePlayoffStats = async function () {
                                     }
                                 });
                             } else {
-                                // AUDIT: Player not found in pMap, check if they have any stats
-                                const hasStats = athleteData.stats.some(v => parseFloat(v.toString().replace(',', '')) > 0);
-                                if (hasStats) {
-                                    const name = athleteData.athlete.displayName;
-                                    unmatchedAuditMap.set(name, (unmatchedAuditMap.get(name) || 0) + 1);
-                                }
+                                // AUDIT: Player not found in pMap
+                                // Only care about key offensive stats: RECS, Passive TDs, Rushing TDs
+                                athleteData.stats.forEach((val, idx) => {
+                                    const num = parseFloat(val.toString().replace(',', '')) || 0;
+                                    if (num <= 0) return;
+                                    const label = labels[idx];
+                                    let isKeyOffensiveStat = false;
+                                    if (catName === 'receiving' && (label === 'REC' || label === 'TD')) isKeyOffensiveStat = true;
+                                    if (catName === 'passing' && label === 'TD') isKeyOffensiveStat = true;
+                                    if (catName === 'rushing' && label === 'TD') isKeyOffensiveStat = true;
+
+                                    if (isKeyOffensiveStat) {
+                                        const name = athleteData.athlete.displayName;
+                                        unmatchedAuditMap.set(name, (unmatchedAuditMap.get(name) || 0) + 1);
+                                    }
+                                });
                             }
                         });
                     });
