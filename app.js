@@ -4,7 +4,7 @@
  */
 
 // --- Constants & Pool Data ---
-const VERSION = '5.12.0'; // Manual Injury Elimination
+const VERSION = '5.12.1'; // Eliminated Emoji Update
 const SYNC_EVENT_TYPE = 'FIZZ_V5_CLEAN';
 
 // --- ESPN API Configuration ---
@@ -48,7 +48,7 @@ const supabase = (window.supabase) ? window.supabase.createClient(SUPABASE_URL, 
 
 let ELIMINATED_TEAMS = new Set();
 const INJURED_PLAYERS = {
-    162: 'Achilles Eliminated 🩼' // George Kittle 
+    162: 'ACHILLES ELIMINATED 🩼' // George Kittle 
 };
 
 // We use a "Local Mirror" of the cloud ID (Sync Code)
@@ -1926,7 +1926,7 @@ function renderRoster(l) {
             const pts = calculateFantasyPoints(masterP, false);
             const isInjured = !!INJURED_PLAYERS[masterP.id];
             const isEliminated = ELIMINATED_TEAMS.has(masterP.team) || isInjured;
-            const nextGame = isInjured ? INJURED_PLAYERS[masterP.id] : (isEliminated ? 'ELIMINATED' : (TEAM_SCHEDULE[masterP.team] || 'TBD'));
+            const nextGame = isInjured ? INJURED_PLAYERS[masterP.id] : (isEliminated ? '❌ ELIMINATED' : (TEAM_SCHEDULE[masterP.team] || 'TBD'));
             const rowStyle = isEliminated ? 'background: #fff5f5;' : '';
 
             tableHTML += `
