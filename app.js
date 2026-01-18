@@ -4,7 +4,7 @@
  */
 
 // --- Constants & Pool Data ---
-const VERSION = '5.6.2'; // Rashid Scoring Breakdown Fix
+const VERSION = '5.6.3'; // Return TD Scoring Migration
 const SYNC_EVENT_TYPE = 'FIZZ_V5_CLEAN';
 
 // --- ESPN API Configuration ---
@@ -1099,10 +1099,23 @@ async function initApp() {
         subscribeToChanges();
     }
 
-    // 3. Migration: If any league is missing a sync code, generate and save now
-    const needsMigration = state.leagues.some(l => !l.syncCode);
+    // 3. Migration: If any league is missing a sync code or retTD scoring, update now
+    let needsMigration = false;
+    state.leagues.forEach(l => {
+        if (!l.syncCode) {
+            l.syncCode = 'FF-' + Math.floor(100000 + Math.random() * 900000);
+            needsMigration = true;
+        }
+        l.scoring = l.scoring || { ...DEFAULT_SCORING };
+        if (l.scoring.retTD === undefined) {
+            console.log(`🛠 Adding Return TD scoring (6pts) to league: ${l.name}`);
+            l.scoring.retTD = 6;
+            needsMigration = true;
+        }
+    });
+
     if (needsMigration) {
-        console.log("🛠 Migrating legacy leagues to unique sync codes...");
+        console.log("🛠 Finalizing league migrations...");
         await saveSession();
     }
 
