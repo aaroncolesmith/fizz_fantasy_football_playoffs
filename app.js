@@ -783,123 +783,126 @@ window.syncLivePlayoffStats = async function () {
 
         if (validGames.length === 0) {
             console.log('No live or completed 2026 playoff games found (starting Jan 10).');
-            // Still update UI in case we need to clear previous values
-            PLAYERS.forEach(p => p.fantasyPts = calculateFantasyPoints(p, false));
-            updateUI();
-            return;
-        }
+        } else {
+            console.log(`🏈 Processing ${validGames.length} valid 2026 playoff games...`);
 
-        console.log(`🏈 Processing ${validGames.length} valid 2026 playoff games...`);
+            // Create player lookup map
+            const pMap = new Map();
+            PLAYERS.forEach(p => pMap.set(normalizeName(p.name), p));
 
-        // Create player lookup map
-        const pMap = new Map();
-        PLAYERS.forEach(p => pMap.set(normalizeName(p.name), p));
+            const unmatchedAuditMap = new Map(); // displayName -> 1
 
-        const unmatchedAuditMap = new Map(); // displayName -> 1
+            for (const g of validGames) {
+                try {
+                    // A. Core Boxscore Stats
+                    const bxResponse = await fetch(`https://cdn.espn.com/core/nfl/boxscore?xhr=1&gameId=${g.id}`);
+                    const bxData = await bxResponse.json();
+                    const playersData = bxData.gamepackageJSON?.boxscore?.players || [];
 
-        for (const g of validGames) {
-            try {
-                // A. Core Boxscore Stats
-                const bxResponse = await fetch(`https://cdn.espn.com/core/nfl/boxscore?xhr=1&gameId=${g.id}`);
-                const bxData = await bxResponse.json();
-                const playersData = bxData.gamepackageJSON?.boxscore?.players || [];
+                    playersData.forEach(teamData => {
+                        teamData.statistics.forEach(cat => {
+                            const catName = cat.name;
+                            const labels = cat.labels;
+                            cat.athletes.forEach(athleteData => {
+                                const p = pMap.get(normalizeName(athleteData.athlete.displayName));
+                                if (p) {
+                                    athleteData.stats.forEach((val, idx) => {
+                                        const rawVal = val.toString().replace(',', '');
+                                        const num = parseFloat(rawVal) || 0;
+                                        const label = labels[idx];
 
-                playersData.forEach(teamData => {
-                    teamData.statistics.forEach(cat => {
-                        const catName = cat.name;
-                        const labels = cat.labels;
-                        cat.athletes.forEach(athleteData => {
-                            const p = pMap.get(normalizeName(athleteData.athlete.displayName));
-                            if (p) {
-                                athleteData.stats.forEach((val, idx) => {
-                                    const rawVal = val.toString().replace(',', '');
-                                    const num = parseFloat(rawVal) || 0;
-                                    const label = labels[idx];
+                                        if (catName === 'passing') {
+                                            if (label === 'YDS') p.passYds += num;
+                                            if (label === 'TD') p.passTD += num;
+                                            if (label === 'INT') p.ints += num;
+                                        } else if (catName === 'rushing') {
+                                            if (label === 'YDS') p.rushYds += num;
+                                            if (label === 'TD') p.rushTD += num;
+                                        } else if (catName === 'receiving') {
+                                            if (label === 'REC') p.recs += num;
+                                            if (label === 'YDS') p.recYds += num;
+                                            if (label === 'TD') p.recTD += num;
+                                        } else if (catName.toLowerCase().includes('return')) {
+                                            // Catch kickoffReturns, puntReturns, kickReturns, etc.
+                                            if (label === 'TD') p.retTD += num;
+                                        } else if (catName === 'fumbles') {
+                                            if (label === 'LOST') p.fumbles += num;
+                                        }
+                                    });
+                                } else {
+                                    // AUDIT: Player not found in pMap
+                                    athleteData.stats.forEach((val, idx) => {
+                                        const num = parseFloat(val.toString().replace(',', '')) || 0;
+                                        if (num <= 0) return;
+                                        const label = labels[idx];
+                                        let isKeyOffensiveStat = false;
+                                        if (catName === 'receiving' && (label === 'REC' || label === 'TD')) isKeyOffensiveStat = true;
+                                        if (catName === 'passing' && label === 'TD') isKeyOffensiveStat = true;
+                                        if (catName === 'rushing' && label === 'TD') isKeyOffensiveStat = true;
+                                        if ((catName === 'kickoffReturns' || catName === 'puntReturns') && label === 'TD') isKeyOffensiveStat = true;
 
-                                    if (catName === 'passing') {
-                                        if (label === 'YDS') p.passYds += num;
-                                        if (label === 'TD') p.passTD += num;
-                                        if (label === 'INT') p.ints += num;
-                                    } else if (catName === 'rushing') {
-                                        if (label === 'YDS') p.rushYds += num;
-                                        if (label === 'TD') p.rushTD += num;
-                                    } else if (catName === 'receiving') {
-                                        if (label === 'REC') p.recs += num;
-                                        if (label === 'YDS') p.recYds += num;
-                                        if (label === 'TD') p.recTD += num;
-                                    } else if (catName.toLowerCase().includes('return')) {
-                                        // Catch kickoffReturns, puntReturns, kickReturns, etc.
-                                        if (label === 'TD') p.retTD += num;
-                                    } else if (catName === 'fumbles') {
-                                        if (label === 'LOST') p.fumbles += num;
-                                    }
-                                });
-                            } else {
-                                // AUDIT: Player not found in pMap
-                                // Only care about key offensive stats: RECS, Passive TDs, Rushing TDs
-                                athleteData.stats.forEach((val, idx) => {
-                                    const num = parseFloat(val.toString().replace(',', '')) || 0;
-                                    if (num <= 0) return;
-                                    const label = labels[idx];
-                                    let isKeyOffensiveStat = false;
-                                    if (catName === 'receiving' && (label === 'REC' || label === 'TD')) isKeyOffensiveStat = true;
-                                    if (catName === 'passing' && label === 'TD') isKeyOffensiveStat = true;
-                                    if (catName === 'rushing' && label === 'TD') isKeyOffensiveStat = true;
-                                    if ((catName === 'kickoffReturns' || catName === 'puntReturns') && label === 'TD') isKeyOffensiveStat = true;
-
-                                    if (isKeyOffensiveStat) {
-                                        const name = athleteData.athlete.displayName;
-                                        unmatchedAuditMap.set(name, (unmatchedAuditMap.get(name) || 0) + 1);
-                                    }
-                                });
-                            }
+                                        if (isKeyOffensiveStat) {
+                                            const name = athleteData.athlete.displayName;
+                                            unmatchedAuditMap.set(name, (unmatchedAuditMap.get(name) || 0) + 1);
+                                        }
+                                    });
+                                }
+                            });
                         });
                     });
-                });
 
-                // B. Summary for 2pt Conversions
-                const sumResponse = await fetch(`https://site.api.espn.com/apis/site/v2/sports/football/nfl/summary?event=${g.id}`);
-                const sumData = await sumResponse.json();
-                (sumData.scoringPlays || []).forEach(play => {
-                    const text = play.text || '';
-                    if (text.includes('Two-Point Conversion')) {
-                        const match = text.match(/\(([^)]+)\)/);
-                        if (match) {
-                            const inner = match[1];
-                            if (inner.includes('Pass to')) {
-                                const action = inner.replace('for Two-Point Conversion', '').trim();
-                                const parts = action.split(' Pass to ');
-                                if (parts.length === 2) {
-                                    const pPass = pMap.get(normalizeName(parts[0]));
-                                    const pRec = pMap.get(normalizeName(parts[1]));
-                                    if (pPass) pPass.pass2pt = (pPass.pass2pt || 0) + 1;
-                                    if (pRec) pRec.rec2pt = (pRec.rec2pt || 0) + 1;
+                    // B. Summary for 2pt Conversions
+                    const sumResponse = await fetch(`https://site.api.espn.com/apis/site/v2/sports/football/nfl/summary?event=${g.id}`);
+                    const sumData = await sumResponse.json();
+                    (sumData.scoringPlays || []).forEach(play => {
+                        const text = play.text || '';
+                        if (text.includes('Two-Point Conversion')) {
+                            const match = text.match(/\(([^)]+)\)/);
+                            if (match) {
+                                const inner = match[1];
+                                if (inner.includes('Pass to')) {
+                                    const action = inner.replace('for Two-Point Conversion', '').trim();
+                                    const parts = action.split(' Pass to ');
+                                    if (parts.length === 2) {
+                                        const pPass = pMap.get(normalizeName(parts[0]));
+                                        const pRec = pMap.get(normalizeName(parts[1]));
+                                        if (pPass) pPass.pass2pt = (pPass.pass2pt || 0) + 1;
+                                        if (pRec) pRec.rec2pt = (pRec.rec2pt || 0) + 1;
+                                    }
+                                } else if (inner.includes('Rush')) {
+                                    const rusher = inner.replace('Rush', '').replace('for Two-Point Conversion', '').trim();
+                                    const pRush = pMap.get(normalizeName(rusher));
+                                    if (pRush) pRush.rush2pt = (pRush.rush2pt || 0) + 1;
                                 }
-                            } else if (inner.includes('Rush')) {
-                                const rusher = inner.replace('Rush', '').replace('for Two-Point Conversion', '').trim();
-                                const pRush = pMap.get(normalizeName(rusher));
-                                if (pRush) pRush.rush2pt = (pRush.rush2pt || 0) + 1;
                             }
+                        } else if (text.includes('Return TD') || text.includes('Return touchdown')) {
+                            // Fallback: Rashid Shaheed 102 Yd Kickoff Return TD
+                            const pName = text.split(/[0-9]+/)[0].trim();
+                            const p = pMap.get(normalizeName(pName));
+                            if (p) p.retTD = (p.retTD || 0) + 1;
                         }
-                    } else if (text.includes('Return TD') || text.includes('Return touchdown')) {
-                        // Fallback: Rashid Shaheed 102 Yd Kickoff Return TD
-                        const pName = text.split(/[0-9]+/)[0].trim();
-                        const p = pMap.get(normalizeName(pName));
-                        if (p) p.retTD = (p.retTD || 0) + 1;
-                    }
-                });
+                    });
 
-            } catch (err) {
-                console.warn(`2026 Sync failed for Game ID: ${g.id}`, err);
+                } catch (err) {
+                    console.warn(`2026 Sync failed for Game ID: ${g.id}`, err);
+                }
             }
+
+            // Update Audit State
+            state.unmatchedAudit = [...unmatchedAuditMap.entries()]
+                .map(([name, count]) => ({ name, count }))
+                .sort((a, b) => b.count - a.count)
+                .slice(0, 10);
         }
 
-        // Final Step: Manual Overrides for stats the API might miss (e.g., Live Return TDs)
+        // Final Step: Manual Overrides - Apply these regardless of API detection
+        const pMapGlobal = new Map();
+        PLAYERS.forEach(p => pMapGlobal.set(normalizeName(p.name), p));
         const manualDivisionalOverrides = {
             'Rashid Shaheed': { retTD: 1 }
         };
         Object.entries(manualDivisionalOverrides).forEach(([name, over]) => {
-            const p = pMap.get(normalizeName(name));
+            const p = pMapGlobal.get(normalizeName(name));
             if (p) {
                 Object.entries(over).forEach(([k, v]) => {
                     p[k] = Math.max(p[k] || 0, v);
@@ -907,19 +910,13 @@ window.syncLivePlayoffStats = async function () {
             }
         });
 
-        // Final Step: Recalculate Playoff Points for all players
+        // Recalculate Playoff Points for all players
         PLAYERS.forEach(p => {
             p.fantasyPts = calculateFantasyPoints(p, false);
         });
 
-        // Update Audit State
-        state.unmatchedAudit = [...unmatchedAuditMap.entries()]
-            .map(([name, count]) => ({ name, count }))
-            .sort((a, b) => b.count - a.count)
-            .slice(0, 10);
-
         console.log('✅ 2026 Live Stat Sync Success.');
-        if (state.unmatchedAudit.length > 0) {
+        if (state.unmatchedAudit?.length > 0) {
             console.warn('⚠️ UNMATCHED PLAYERS FOUND WITH STATS:', state.unmatchedAudit);
         }
         updateUI();
