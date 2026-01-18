@@ -750,7 +750,8 @@ window.syncLivePlayoffStats = async function () {
     console.log('📡 Syncing Live Playoff Stats (v5.6.0) from 2026 ESPN Boxscores...');
     try {
         // 1. Reset all playoff stats to 0 before accumulating
-        ELIMINATED_TEAMS = new Set();
+        // Re-initialize with known eliminated teams
+        ELIMINATED_TEAMS = new Set(['LAC', 'JAX', 'PIT', 'GB', 'PHI', 'CAR']);
         PLAYERS.forEach(p => {
             ['passYds', 'passTD', 'ints', 'rushYds', 'rushTD', 'recs', 'recYds', 'recTD', 'fumbles', 'pass2pt', 'rush2pt', 'rec2pt', 'retTD'].forEach(key => {
                 p[key] = 0;
@@ -826,7 +827,8 @@ window.syncLivePlayoffStats = async function () {
                                         if (label === 'REC') p.recs += num;
                                         if (label === 'YDS') p.recYds += num;
                                         if (label === 'TD') p.recTD += num;
-                                    } else if (catName === 'kickoffReturns' || catName === 'puntReturns') {
+                                    } else if (catName.toLowerCase().includes('return')) {
+                                        // Catch kickoffReturns, puntReturns, kickReturns, etc.
                                         if (label === 'TD') p.retTD += num;
                                     } else if (catName === 'fumbles') {
                                         if (label === 'LOST') p.fumbles += num;
@@ -879,6 +881,11 @@ window.syncLivePlayoffStats = async function () {
                                 if (pRush) pRush.rush2pt = (pRush.rush2pt || 0) + 1;
                             }
                         }
+                    } else if (text.includes('Return TD') || text.includes('Return touchdown')) {
+                        // Fallback: Rashid Shaheed 102 Yd Kickoff Return TD
+                        const pName = text.split(/[0-9]+/)[0].trim();
+                        const p = pMap.get(normalizeName(pName));
+                        if (p) p.retTD = (p.retTD || 0) + 1;
                     }
                 });
 
@@ -886,6 +893,19 @@ window.syncLivePlayoffStats = async function () {
                 console.warn(`2026 Sync failed for Game ID: ${g.id}`, err);
             }
         }
+
+        // Final Step: Manual Overrides for stats the API might miss (e.g., Live Return TDs)
+        const manualDivisionalOverrides = {
+            'Rashid Shaheed': { retTD: 1 }
+        };
+        Object.entries(manualDivisionalOverrides).forEach(([name, over]) => {
+            const p = pMap.get(normalizeName(name));
+            if (p) {
+                Object.entries(over).forEach(([k, v]) => {
+                    p[k] = Math.max(p[k] || 0, v);
+                });
+            }
+        });
 
         // Final Step: Recalculate Playoff Points for all players
         PLAYERS.forEach(p => {
