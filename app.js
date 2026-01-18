@@ -4,7 +4,7 @@
  */
 
 // --- Constants & Pool Data ---
-const VERSION = '5.13.2'; // Refined Name Audit
+const VERSION = '5.6.0'; // Divisional Round & Return TDs Update
 const SYNC_EVENT_TYPE = 'FIZZ_V5_CLEAN';
 
 // --- ESPN API Configuration ---
@@ -37,6 +37,7 @@ const DEFAULT_SCORING = {
     pass2pt: 2,
     rush2pt: 2,
     rec2pt: 2,
+    retTD: 6,
     ints: -2,
     fumbles: -2
 };
@@ -46,7 +47,7 @@ const SUPABASE_URL = 'https://rchbzcfhnhshbvtjtfay.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJjaGJ6Y2ZobmhzaGJ2dGp0ZmF5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYzNDI2NTAsImV4cCI6MjA4MTkxODY1MH0.jpsdpVw1DSNM8ZpqfzjK-H86w3uMRBgKqT1m65h7pfg';
 const supabase = (window.supabase) ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
 
-let ELIMINATED_TEAMS = new Set();
+let ELIMINATED_TEAMS = new Set(['LAC', 'JAX', 'PIT', 'GB', 'PHI', 'CAR']);
 const INJURED_PLAYERS = {
     162: 'ACHILLES ELIMINATED 🩼' // George Kittle 
 };
@@ -205,7 +206,7 @@ const PLAYERS = [
     { id: 103, name: 'Noah Fant', pos: 'TE', team: 'SEA', passTD: 0, rushTD: 0, recTD: 4, recs: 52 },
     { id: 104, name: 'AJ Barner', pos: 'TE', team: 'SEA', passTD: 0, rushTD: 0, recTD: 1, recs: 15 },
 
-    { id: 208, name: 'Rashid Shaheed', pos: 'WR', team: 'SEA', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
+    { id: 208, name: 'Rashid Shaheed', pos: 'WR', team: 'SEA', passTD: 0, rushTD: 0, recTD: 0, recs: 0, retTD: 1 },
     { id: 209, name: 'Drew Lock', pos: 'QB', team: 'SEA', passTD: 0, rushTD: 0, recTD: 0, recs: 0 },
     // NFC #2 - Chicago Bears (CHI)
     { id: 105, name: 'Caleb Williams', pos: 'QB', team: 'CHI', passTD: 25, rushTD: 6, recTD: 0, recs: 0 },
@@ -323,20 +324,14 @@ const PLAYERS = [
 ];
 
 const TEAM_SCHEDULE = {
-    'DEN': 'BYE',
-    'NE': 'Sat. 1/10 vs LAC',
-    'JAX': 'Sun. 1/11 vs BUF',
-    'PIT': 'Mon. 1/12 vs HOU',
-    'HOU': 'Mon. 1/12 @PIT',
-    'BUF': 'Sun. 1/11 @JAX',
-    'LAC': 'Sat. 1/10 @NE',
-    'SEA': 'BYE',
-    'CHI': 'Sun. 1/11 vs GB',
-    'PHI': 'Sun. 1/11 vs SF',
-    'CAR': 'Sat. 1/10 vs LAR',
-    'LAR': 'Sat. 1/10 @CAR',
-    'SF': 'Sun. 1/11 @PHI',
-    'GB': 'Sun. 1/11 @CHI'
+    'DEN': 'Sat. 1/17 vs BUF',
+    'BUF': 'Sat. 1/17 @DEN',
+    'SEA': 'Sat. 1/17 vs SF',
+    'SF': 'Sat. 1/17 @SEA',
+    'NE': 'Sun. 1/18 vs HOU',
+    'HOU': 'Sun. 1/18 @NE',
+    'CHI': 'Sun. 1/18 vs LAR',
+    'LAR': 'Sun. 1/18 @CHI'
 };
 
 const SLOTS = ['QB', 'RB1', 'RB2', 'WR1', 'WR2', 'TE', 'FLEX1', 'FLEX2'];
@@ -757,7 +752,7 @@ window.syncLivePlayoffStats = async function () {
         // 1. Reset all playoff stats to 0 before accumulating
         ELIMINATED_TEAMS = new Set();
         PLAYERS.forEach(p => {
-            ['passYds', 'passTD', 'ints', 'rushYds', 'rushTD', 'recs', 'recYds', 'recTD', 'fumbles', 'pass2pt', 'rush2pt', 'rec2pt'].forEach(key => {
+            ['passYds', 'passTD', 'ints', 'rushYds', 'rushTD', 'recs', 'recYds', 'recTD', 'fumbles', 'pass2pt', 'rush2pt', 'rec2pt', 'retTD'].forEach(key => {
                 p[key] = 0;
             });
         });
@@ -831,6 +826,8 @@ window.syncLivePlayoffStats = async function () {
                                         if (label === 'REC') p.recs += num;
                                         if (label === 'YDS') p.recYds += num;
                                         if (label === 'TD') p.recTD += num;
+                                    } else if (catName === 'kickoffReturns' || catName === 'puntReturns') {
+                                        if (label === 'TD') p.retTD += num;
                                     } else if (catName === 'fumbles') {
                                         if (label === 'LOST') p.fumbles += num;
                                     }
@@ -846,6 +843,7 @@ window.syncLivePlayoffStats = async function () {
                                     if (catName === 'receiving' && (label === 'REC' || label === 'TD')) isKeyOffensiveStat = true;
                                     if (catName === 'passing' && label === 'TD') isKeyOffensiveStat = true;
                                     if (catName === 'rushing' && label === 'TD') isKeyOffensiveStat = true;
+                                    if ((catName === 'kickoffReturns' || catName === 'puntReturns') && label === 'TD') isKeyOffensiveStat = true;
 
                                     if (isKeyOffensiveStat) {
                                         const name = athleteData.athlete.displayName;
@@ -930,6 +928,7 @@ function calculateFantasyPoints(p, useHistorical = false) {
     pts += (stats.pass2pt || 0) * (s.pass2pt || 0);
     pts += (stats.rush2pt || 0) * (s.rush2pt || 0);
     pts += (stats.rec2pt || 0) * (s.rec2pt || 0);
+    pts += (stats.retTD || 0) * (s.retTD || 0);
 
     return parseFloat(pts.toFixed(2));
 }
@@ -956,6 +955,7 @@ function getPointsBreakdown(p, useHistorical = false) {
     check(stats.pass2pt, s.pass2pt, "Pass 2pt");
     check(stats.rush2pt, s.rush2pt, "Rush 2pt");
     check(stats.rec2pt, s.rec2pt, "Rec 2pt");
+    check(stats.retTD, s.retTD, "Return TDs");
 
     return lines.length ? lines.join('\n') : "No points scored";
 }
@@ -1037,7 +1037,8 @@ function normalizePlayers() {
                 fumbles: p.fumbles || 0,
                 pass2pt: p.pass2pt || 0,
                 rush2pt: p.rush2pt || 0,
-                rec2pt: p.rec2pt || 0
+                rec2pt: p.rec2pt || 0,
+                retTD: p.retTD || 0
             };
             p.historicalStats.fantasyPts = calculateFantasyPoints(p, true);
         }
@@ -1047,7 +1048,7 @@ function normalizePlayers() {
         const statsToZero = [
             'passYds', 'passTD', 'ints', 'rushYds', 'rushTD',
             'recs', 'recYds', 'recTD', 'fumbles',
-            'pass2pt', 'rush2pt', 'rec2pt', 'fantasyPts'
+            'pass2pt', 'rush2pt', 'rec2pt', 'retTD', 'fantasyPts'
         ];
         statsToZero.forEach(sKey => {
             p[sKey] = 0;
