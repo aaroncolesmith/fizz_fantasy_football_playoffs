@@ -4,7 +4,7 @@
  */
 
 // --- Constants & Pool Data ---
-const VERSION = '5.6.0'; // Divisional Round & Return TDs Update
+const VERSION = '5.6.1'; // Rashid Shaheed & Divisional Fix
 const SYNC_EVENT_TYPE = 'FIZZ_V5_CLEAN';
 
 // --- ESPN API Configuration ---
