@@ -4,7 +4,7 @@
  */
 
 // --- Constants & Pool Data ---
-const VERSION = '5.6.1'; // Rashid Shaheed & Divisional Fix
+const VERSION = '5.6.2'; // Rashid Scoring Breakdown Fix
 const SYNC_EVENT_TYPE = 'FIZZ_V5_CLEAN';
 
 // --- ESPN API Configuration ---
@@ -1004,7 +1004,8 @@ window.showBreakdown = (pid, historical) => {
         { label: 'Fumbles Lost', val: stats.fumbles, mult: s.fumbles },
         { label: '2pt Passing', val: stats.pass2pt, mult: s.pass2pt },
         { label: '2pt Rushing', val: stats.rush2pt, mult: s.rush2pt },
-        { label: '2pt Receiving', val: stats.rec2pt, mult: s.rec2pt }
+        { label: '2pt Receiving', val: stats.rec2pt, mult: s.rec2pt },
+        { label: 'Return TDs', val: stats.retTD, mult: s.retTD }
     ];
 
     let html = '';
