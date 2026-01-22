@@ -4,7 +4,7 @@
  */
 
 // --- Constants & Pool Data ---
-const VERSION = '5.6.3'; // Return TD Scoring Migration
+const VERSION = '5.7.0'; // Conference Championship Update
 const SYNC_EVENT_TYPE = 'FIZZ_V5_CLEAN';
 
 // --- ESPN API Configuration ---
@@ -47,8 +47,10 @@ const SUPABASE_URL = 'https://rchbzcfhnhshbvtjtfay.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJjaGJ6Y2ZobmhzaGJ2dGp0ZmF5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYzNDI2NTAsImV4cCI6MjA4MTkxODY1MH0.jpsdpVw1DSNM8ZpqfzjK-H86w3uMRBgKqT1m65h7pfg';
 const supabase = (window.supabase) ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
 
-let ELIMINATED_TEAMS = new Set(['LAC', 'JAX', 'PIT', 'GB', 'PHI', 'CAR']);
+let ELIMINATED_TEAMS = new Set(['LAC', 'JAX', 'PIT', 'GB', 'PHI', 'CAR', 'BUF', 'SF', 'HOU', 'CHI']);
 const INJURED_PLAYERS = {
+    1: 'ANKLE ELIMINATED 🩼',   // Bo Nix
+    96: 'KNEE ELIMINATED 🩼',    // Zach Charbonnet
     162: 'ACHILLES ELIMINATED 🩼' // George Kittle 
 };
 
@@ -324,14 +326,10 @@ const PLAYERS = [
 ];
 
 const TEAM_SCHEDULE = {
-    'DEN': 'Sat. 1/17 vs BUF',
-    'BUF': 'Sat. 1/17 @DEN',
-    'SEA': 'Sat. 1/17 vs SF',
-    'SF': 'Sat. 1/17 @SEA',
-    'NE': 'Sun. 1/18 vs HOU',
-    'HOU': 'Sun. 1/18 @NE',
-    'CHI': 'Sun. 1/18 vs LAR',
-    'LAR': 'Sun. 1/18 @CHI'
+    'DEN': 'Sun. 1/25 vs NE',
+    'NE': 'Sun. 1/25 @DEN',
+    'SEA': 'Sun. 1/25 vs LAR',
+    'LAR': 'Sun. 1/25 @SEA'
 };
 
 const SLOTS = ['QB', 'RB1', 'RB2', 'WR1', 'WR2', 'TE', 'FLEX1', 'FLEX2'];
