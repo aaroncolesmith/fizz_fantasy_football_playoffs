@@ -1582,32 +1582,32 @@ function renderSuperbowlProjections(l) {
 
         if (aliveCount === 0) {
             // Grade based only on current score since no upside left
-            if (currentPlayoffScore >= 150) {
+            if (currentPlayoffScore >= 120) {
                 grade = 'B+';
                 gradeColor = '#84cc16';
-            } else if (currentPlayoffScore >= 100) {
+            } else if (currentPlayoffScore >= 80) {
                 grade = 'C+';
                 gradeColor = '#eab308';
-            } else if (currentPlayoffScore >= 50) {
+            } else if (currentPlayoffScore >= 40) {
                 grade = 'D';
                 gradeColor = '#f97316';
             } else {
                 grade = 'F';
                 gradeColor = '#dc2626';
             }
-        } else if (totalProjected >= 200) {
+        } else if (totalProjected >= 150) {
             grade = 'A+';
             gradeColor = '#16a34a';
-        } else if (totalProjected >= 170) {
+        } else if (totalProjected >= 130) {
             grade = 'A';
             gradeColor = '#22c55e';
-        } else if (totalProjected >= 140) {
+        } else if (totalProjected >= 110) {
             grade = 'B+';
             gradeColor = '#84cc16';
-        } else if (totalProjected >= 110) {
+        } else if (totalProjected >= 90) {
             grade = 'B';
             gradeColor = '#eab308';
-        } else if (totalProjected >= 80) {
+        } else if (totalProjected >= 70) {
             grade = 'C';
             gradeColor = '#f97316';
         } else if (totalProjected > 0) {
