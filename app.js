@@ -4,7 +4,7 @@
  */
 
 // --- Constants & Pool Data ---
-const VERSION = '5.9.0'; // Full Playoff Projections Update
+const VERSION = '5.9.1'; // Remove projections commentary
 const SYNC_EVENT_TYPE = 'FIZZ_V5_CLEAN';
 
 // --- ESPN API Configuration ---
@@ -1578,62 +1578,50 @@ function renderSuperbowlProjections(l) {
         const eliminatedCount = eliminatedPlayers.length;
 
         // Assign grade based on TOTAL PLAYOFF PERFORMANCE (current + projected)
-        let grade, gradeColor, commentary;
+        let grade, gradeColor;
 
         if (aliveCount === 0) {
             // Grade based only on current score since no upside left
             if (currentPlayoffScore >= 150) {
                 grade = 'B+';
                 gradeColor = '#84cc16';
-                commentary = getFinishedStrongCommentary(t.name, currentPlayoffScore);
             } else if (currentPlayoffScore >= 100) {
                 grade = 'C+';
                 gradeColor = '#eab308';
-                commentary = getFinishedOkCommentary(t.name, currentPlayoffScore);
             } else if (currentPlayoffScore >= 50) {
                 grade = 'D';
                 gradeColor = '#f97316';
-                commentary = getFinishedWeakCommentary(t.name, currentPlayoffScore);
             } else {
                 grade = 'F';
                 gradeColor = '#dc2626';
-                commentary = getEliminatedCommentary(t.name, eliminatedCount);
             }
         } else if (totalProjected >= 200) {
             grade = 'A+';
             gradeColor = '#16a34a';
-            commentary = getTopTierCommentary(t.name, aliveCount, totalProjected, currentPlayoffScore);
         } else if (totalProjected >= 170) {
             grade = 'A';
             gradeColor = '#22c55e';
-            commentary = getGoodCommentary(t.name, aliveCount, totalProjected, currentPlayoffScore);
         } else if (totalProjected >= 140) {
             grade = 'B+';
             gradeColor = '#84cc16';
-            commentary = getDecentCommentary(t.name, aliveCount, totalProjected, currentPlayoffScore);
         } else if (totalProjected >= 110) {
             grade = 'B';
             gradeColor = '#eab308';
-            commentary = getMediocreCommentary(t.name, aliveCount, totalProjected, currentPlayoffScore);
         } else if (totalProjected >= 80) {
             grade = 'C';
             gradeColor = '#f97316';
-            commentary = getWeakCommentary(t.name, aliveCount, totalProjected, currentPlayoffScore);
         } else if (totalProjected > 0) {
             grade = 'D';
             gradeColor = '#ef4444';
-            commentary = getTerribleCommentary(t.name, aliveCount, totalProjected, currentPlayoffScore);
         } else {
             grade = 'F';
             gradeColor = '#dc2626';
-            commentary = getNoHopeCommentary(t.name);
         }
 
         teamProjections.push({
             name: t.name,
             grade,
             gradeColor,
-            commentary,
             currentPlayoffScore,
             sbProjectedPts,
             totalProjected,
@@ -1698,24 +1686,19 @@ function renderSuperbowlProjections(l) {
 
         html += `
             <div class="card glass" style="margin-bottom: 20px; border-left: 5px solid ${team.gradeColor};">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
-                    <div style="flex: 1; min-width: 200px;">
-                        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
-                            <span style="font-size: 1.5rem;">${medal}</span>
-                            <h3 style="font-weight: 900; font-size: 1.3rem; margin: 0; letter-spacing: -1px;">
-                                ${team.name.toUpperCase()}
-                            </h3>
-                        </div>
-                        <p style="font-size: 0.85rem; color: var(--gray); margin: 0; line-height: 1.5;">
-                            ${team.commentary}
-                        </p>
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <span style="font-size: 1.5rem;">${medal}</span>
+                        <h3 style="font-weight: 900; font-size: 1.3rem; margin: 0; letter-spacing: -1px;">
+                            ${team.name.toUpperCase()}
+                        </h3>
                     </div>
-                    <div style="text-align: center; min-width: 100px;">
-                        <div style="font-size: 3rem; font-weight: 900; color: ${team.gradeColor}; line-height: 1;">
+                    <div style="text-align: center; min-width: 80px;">
+                        <div style="font-size: 2.5rem; font-weight: 900; color: ${team.gradeColor}; line-height: 1;">
                             ${team.grade}
                         </div>
-                        <div style="font-size: 0.65rem; color: var(--gray); font-weight: 600;">
-                            PLAYOFF GRADE
+                        <div style="font-size: 0.6rem; color: var(--gray); font-weight: 600;">
+                            GRADE
                         </div>
                     </div>
                 </div>
@@ -1825,106 +1808,6 @@ function renderSuperbowlProjections(l) {
     container.innerHTML = html;
 }
 
-// Sarcastic commentary generators for COMPLETE PLAYOFF performance
-function getEliminatedCommentary(name, count) {
-    const options = [
-        `${name}, my friend, your entire roster went home weeks ago. You're basically watching the Super Bowl for the commercials at this point. Maybe next year you'll learn that picking players who actually make the playoffs is, you know, kind of important.`,
-        `Oh ${name}, where did it all go wrong? All ${count} of your players are sipping Mai Tais in Cancun right now. Your fantasy season ended before it even began. Spectacular failure.`,
-        `${name} showed up to a playoff fantasy league and forgot the "playoff" part. Zero Super Bowl upside. Absolutely legendary tank job.`,
-        `I've seen better roster management from a blindfolded monkey throwing darts. ${name}, your ${count} eliminated players salute you from their couches.`
-    ];
-    return options[Math.floor(Math.random() * options.length)];
-}
-
-function getFinishedStrongCommentary(name, currentScore) {
-    const options = [
-        `${name} rode their eliminated players to a respectable ${currentScore.toFixed(1)} points. No Super Bowl upside, but hey, at least the early rounds weren't a complete disaster. Silver linings!`,
-        `All of ${name}'s players are out, but they at least had the decency to score ${currentScore.toFixed(1)} points before exiting. Could be worse. Could definitely be better though.`,
-        `${name} is done accumulating points with ${currentScore.toFixed(1)} in the bank. Not bad for someone whose entire roster is golfing right now.`
-    ];
-    return options[Math.floor(Math.random() * options.length)];
-}
-
-function getFinishedOkCommentary(name, currentScore) {
-    const options = [
-        `${name}'s ${currentScore.toFixed(1)} points seemed promising... until everyone got eliminated. Now you're just a spectator with a locked-in score. Hope you enjoyed the ride!`,
-        `With ${currentScore.toFixed(1)} points and no players left, ${name} has officially entered "waiting for the inevitable" mode. The playoffs move on without you.`,
-        `${name} managed ${currentScore.toFixed(1)} points before the wheels fell off. Not great, not terrible - the Chernobyl of fantasy rosters.`
-    ];
-    return options[Math.floor(Math.random() * options.length)];
-}
-
-function getFinishedWeakCommentary(name, currentScore) {
-    const options = [
-        `${name}'s players scored a whopping ${currentScore.toFixed(1)} points before all getting eliminated. That's... that's not good. Like, at all.`,
-        `Congrats ${name}, you managed to pick a roster that scored ${currentScore.toFixed(1)} points AND all got eliminated. Impressive failure on multiple fronts.`,
-        `${name} with ${currentScore.toFixed(1)} points and zero Super Bowl players. The good news? It can't get any worse. The bad news? This is your final score.`
-    ];
-    return options[Math.floor(Math.random() * options.length)];
-}
-
-function getTopTierCommentary(name, count, totalPts, currentPts) {
-    const options = [
-        `DOMINANT! ${name} has already banked ${currentPts.toFixed(1)} points and still has ${count} weapons in the Super Bowl. Projected total of ${totalPts.toFixed(1)} is absolutely terrifying. Start engraving the trophy!`,
-        `${name} didn't just draft well - they drafted ELITE. ${currentPts.toFixed(1)} already earned with ${count} players left. The rest of us are playing for second place.`,
-        `Someone call an ambulance because ${name} is MURDERING this playoff pool. ${totalPts.toFixed(1)} projected total? That's championship material right there.`
-    ];
-    return options[Math.floor(Math.random() * options.length)];
-}
-
-function getGoodCommentary(name, count, totalPts, currentPts) {
-    const options = [
-        `${name} is looking solid with ${currentPts.toFixed(1)} points already earned and ${count} players ready for the big game. ${totalPts.toFixed(1)} projected puts you in the hunt. Don't get cocky though!`,
-        `Strong performance from ${name}! ${currentPts.toFixed(1)} in the bank, ${count} players still active. Projected ${totalPts.toFixed(1)} total is nothing to sneeze at.`,
-        `${name} drafted like someone who actually watched football this year. ${currentPts.toFixed(1)} earned, ${totalPts.toFixed(1)} projected - legitimate contender status!`
-    ];
-    return options[Math.floor(Math.random() * options.length)];
-}
-
-function getDecentCommentary(name, count, totalPts, currentPts) {
-    const options = [
-        `${name} is in the "still alive" tier with ${currentPts.toFixed(1)} current points. ${count} Super Bowl players could push you to ${totalPts.toFixed(1)} - but you'll need some breaks.`,
-        `The ${name} experience: ${currentPts.toFixed(1)} earned so far, ${count} players left, ${totalPts.toFixed(1)} projected. It's giving "hopeful but nervous" energy.`,
-        `${name} has built a decent foundation with ${currentPts.toFixed(1)} points. If your ${count} remaining players pop off, you could surprise some people!`
-    ];
-    return options[Math.floor(Math.random() * options.length)];
-}
-
-function getMediocreCommentary(name, count, totalPts, currentPts) {
-    const options = [
-        `${name}, let's be real - ${currentPts.toFixed(1)} points isn't exactly lighting the world on fire. Your ${count} Super Bowl players need to ball out for ${totalPts.toFixed(1)} to mean anything.`,
-        `The ${name} roster is like a C- student hoping the test is graded on a curve. ${currentPts.toFixed(1)} earned, ${totalPts.toFixed(1)} projected. Meh.`,
-        `${name}'s playoff campaign has been... underwhelming. ${currentPts.toFixed(1)} current with only ${count} players left. You're gonna need a miracle.`
-    ];
-    return options[Math.floor(Math.random() * options.length)];
-}
-
-function getWeakCommentary(name, count, totalPts, currentPts) {
-    const options = [
-        `Yikes, ${name}. ${currentPts.toFixed(1)} points so far with only ${count} players left? Projected ${totalPts.toFixed(1)} isn't enough to move the needle. Better luck next year.`,
-        `${name} is basically playing for pride at this point. ${currentPts.toFixed(1)} current, ${totalPts.toFixed(1)} projected - I've seen better numbers from a bye week.`,
-        `The ${name} strategy of "pick players who don't score" has worked flawlessly. ${currentPts.toFixed(1)} points. Brutal. Just brutal.`
-    ];
-    return options[Math.floor(Math.random() * options.length)];
-}
-
-function getTerribleCommentary(name, count, totalPts, currentPts) {
-    const options = [
-        `${name}, I don't know how to tell you this, but ${currentPts.toFixed(1)} current points with a ${totalPts.toFixed(1)} ceiling is borderline embarrassing. Your ${count} remaining players would need to score touchdowns on every play.`,
-        `${name}'s playoff outlook: pain. Pure, unfiltered pain. ${currentPts.toFixed(1)} earned, ${totalPts.toFixed(1)} projected. My condolences.`,
-        `The ${name} roster has about as much upside as a screen door on a submarine. ${currentPts.toFixed(1)} current points tells the whole sad story.`
-    ];
-    return options[Math.floor(Math.random() * options.length)];
-}
-
-function getNoHopeCommentary(name) {
-    const options = [
-        `${name}, there's no sugar-coating this: you have ZERO points AND zero players in the Super Bowl. Your fantasy season is as dead as disco. Better luck in 2027!`,
-        `${name} set a new record for most complete fantasy failure. Zero points. Zero players. Zero hope. The triple zero achievement unlocked!`,
-        `Congratulations ${name}, you've achieved Fantasy Football Nirvana: complete and total roster annihilation. Not a single point earned. Truly legendary failure.`
-    ];
-    return options[Math.floor(Math.random() * options.length)];
-}
 
 function renderSettings(l) {
     const list = document.getElementById('scoring-settings-list');
