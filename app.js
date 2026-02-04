@@ -47,7 +47,7 @@ const SUPABASE_URL = 'https://rchbzcfhnhshbvtjtfay.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJjaGJ6Y2ZobmhzaGJ2dGp0ZmF5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYzNDI2NTAsImV4cCI6MjA4MTkxODY1MH0.jpsdpVw1DSNM8ZpqfzjK-H86w3uMRBgKqT1m65h7pfg';
 const supabase = (window.supabase) ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
 
-let ELIMINATED_TEAMS = new Set(['LAC', 'JAX', 'PIT', 'GB', 'PHI', 'CAR', 'BUF', 'SF', 'HOU', 'CHI']);
+let ELIMINATED_TEAMS = new Set(['LAC', 'JAX', 'PIT', 'GB', 'PHI', 'CAR', 'BUF', 'SF', 'HOU', 'CHI', 'DEN', 'LAR']);
 const INJURED_PLAYERS = {
     1: 'ANKLE ELIMINATED 🩼',   // Bo Nix
     96: 'KNEE ELIMINATED 🩼',    // Zach Charbonnet
@@ -326,10 +326,8 @@ const PLAYERS = [
 ];
 
 const TEAM_SCHEDULE = {
-    'DEN': 'Sun. 1/25 vs NE',
-    'NE': 'Sun. 1/25 @DEN',
-    'SEA': 'Sun. 1/25 vs LAR',
-    'LAR': 'Sun. 1/25 @SEA'
+    'SEA': 'Sun. 2/8 vs NE (Super Bowl LX)',
+    'NE': 'Sun. 2/8 @SEA (Super Bowl LX)'
 };
 
 const SLOTS = ['QB', 'RB1', 'RB2', 'WR1', 'WR2', 'TE', 'FLEX1', 'FLEX2'];
