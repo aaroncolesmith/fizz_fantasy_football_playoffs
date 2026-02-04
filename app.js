@@ -4,7 +4,7 @@
  */
 
 // --- Constants & Pool Data ---
-const VERSION = '5.7.0'; // Conference Championship Update
+const VERSION = '5.8.0'; // Super Bowl LX Projections Update
 const SYNC_EVENT_TYPE = 'FIZZ_V5_CLEAN';
 
 // --- ESPN API Configuration ---
@@ -328,6 +328,40 @@ const PLAYERS = [
 const TEAM_SCHEDULE = {
     'SEA': 'Sun. 2/8 vs NE (Super Bowl LX)',
     'NE': 'Sun. 2/8 @SEA (Super Bowl LX)'
+};
+
+// Super Bowl LX Player Props & Projections (Feb 8, 2026)
+// Data sourced from DraftKings, FanDuel, and other major sportsbooks
+const SUPERBOWL_PROPS = {
+    gameInfo: {
+        date: 'Sunday, February 8, 2026',
+        time: '3:30 PM PST / 6:30 PM EST',
+        location: 'Levi\'s Stadium, Santa Clara, CA',
+        spread: 'SEA -4.5',
+        overUnder: 49.5
+    },
+    // Anytime TD odds (negative = favorite, positive = underdog)
+    anytimeTD: {
+        // Seattle Seahawks
+        'Kenneth Walker III': { odds: -200, team: 'SEA', pos: 'RB', projTD: 1.2, projPts: 18.5 },
+        'Jaxon Smith-Njigba': { odds: -110, team: 'SEA', pos: 'WR', projTD: 0.9, projPts: 22.0 },
+        'Cooper Kupp': { odds: +265, team: 'SEA', pos: 'WR', projTD: 0.5, projPts: 14.5 },
+        'Rashid Shaheed': { odds: +350, team: 'SEA', pos: 'WR', projTD: 0.35, projPts: 8.0 },
+        'Jake Bobo': { odds: +1000, team: 'SEA', pos: 'WR', projTD: 0.15, projPts: 4.0 },
+        'Sam Darnold': { odds: +800, team: 'SEA', pos: 'QB', projTD: 0.2, projPts: 19.5, projPassTD: 2.0, projPassYds: 245 },
+        'George Holani': { odds: +475, team: 'SEA', pos: 'RB', projTD: 0.3, projPts: 5.5 },
+        'AJ Barner': { odds: +550, team: 'SEA', pos: 'TE', projTD: 0.25, projPts: 6.0 },
+        // New England Patriots  
+        'Rhamondre Stevenson': { odds: +145, team: 'NE', pos: 'RB', projTD: 0.7, projPts: 14.0 },
+        'Hunter Henry': { odds: +240, team: 'NE', pos: 'TE', projTD: 0.55, projPts: 10.5 },
+        'Stefon Diggs': { odds: +250, team: 'NE', pos: 'WR', projTD: 0.5, projPts: 13.0 },
+        'Drake Maye': { odds: +285, team: 'NE', pos: 'QB', projTD: 0.4, projPts: 18.0, projPassTD: 1.5, projPassYds: 210 },
+        'Kayshon Boutte': { odds: +310, team: 'NE', pos: 'WR', projTD: 0.4, projPts: 7.5 },
+        'TreVeyon Henderson': { odds: +500, team: 'NE', pos: 'RB', projTD: 0.3, projPts: 6.0 },
+        'Demario Douglas': { odds: +650, team: 'NE', pos: 'WR', projTD: 0.2, projPts: 8.0 },
+        'Mack Hollins': { odds: +425, team: 'NE', pos: 'WR', projTD: 0.35, projPts: 5.0 },
+        'Austin Hooper': { odds: +800, team: 'NE', pos: 'TE', projTD: 0.2, projPts: 4.5 }
+    }
 };
 
 const SLOTS = ['QB', 'RB1', 'RB2', 'WR1', 'WR2', 'TE', 'FLEX1', 'FLEX2'];
@@ -1138,6 +1172,7 @@ function updateUI() {
     if (state.view === 'draft') renderDraftUI(l);
     if (state.view === 'settings') renderSettings(l);
     if (state.view === 'players-list') renderPlayersListPage(l);
+    if (state.view === 'superbowl-projections') renderSuperbowlProjections(l);
     renderBreadcrumbs();
 }
 
@@ -1166,6 +1201,8 @@ function renderBreadcrumbs() {
             html += `<span class="active">SETTINGS</span>`;
         } else if (state.view === 'players-list') {
             html += `<span class="active">PLAYERS</span>`;
+        } else if (state.view === 'superbowl-projections') {
+            html += `<span class="active">🏈 SUPER BOWL LX PROJECTIONS</span>`;
         }
     } else if (state.view === 'new-league') {
         html += `<span class="active">NEW LEAGUE</span>`;
@@ -1257,7 +1294,8 @@ function renderLeagueStats(l) {
                 ${l.name}
                 <div class="live-indicator" style="width: 8px; height: 8px; border-radius: 50%; background: ${syncStatus === 'SUBSCRIBED' ? '#4cd964' : '#ff3b30'};"></div>
             </h2>
-            <div class="header-actions" style="display: flex; gap: 8px;">
+            <div class="header-actions" style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <button class="btn primary btn-mini" style="font-weight: 800; padding: 6px 14px; font-size: 0.7rem; background: linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%);" onclick="navigate('superbowl-projections', '${l.id}')">🏈 SUPER BOWL LX</button>
                 <button class="btn outline-pill btn-mini" style="font-weight: 800; padding: 6px 14px; font-size: 0.7rem;" onclick="navigate('players-list', '${l.id}')">PLAYERS</button>
                 <button class="btn outline-pill btn-mini" style="font-weight: 800; padding: 6px 14px; font-size: 0.7rem;" onclick="navigate('settings', '${l.id}')">SETTINGS</button>
                 ${(l.draftOrder && l.draftOrder.length > 0) ? `
@@ -1474,6 +1512,326 @@ window.setPlayersSort = (col) => {
     const l = getActiveLeague();
     if (l) renderPlayersListPage(l);
 };
+
+// --- Super Bowl LX Projections Page ---
+function renderSuperbowlProjections(l) {
+    const container = document.getElementById('superbowl-projections-content');
+    if (!container || !l) return;
+
+    // Team grading commentary (sarcastic and harsh)
+    const teamGrades = {};
+    const teamProjections = [];
+
+    l.teams.forEach(t => {
+        const alivePlayers = t.roster.filter(rp => {
+            const p = PLAYERS.find(pp => pp.id === rp.id);
+            return p && !ELIMINATED_TEAMS.has(p.team) && !INJURED_PLAYERS[p.id];
+        });
+
+        const eliminatedPlayers = t.roster.filter(rp => {
+            const p = PLAYERS.find(pp => pp.id === rp.id);
+            return p && (ELIMINATED_TEAMS.has(p.team) || INJURED_PLAYERS[p.id]);
+        });
+
+        // Calculate projected Super Bowl points
+        let projectedPts = 0;
+        const playerDetails = [];
+
+        alivePlayers.forEach(rp => {
+            const p = PLAYERS.find(pp => pp.id === rp.id);
+            if (!p) return;
+
+            const propData = SUPERBOWL_PROPS.anytimeTD[p.name];
+            const proj = propData ? propData.projPts : 0;
+            projectedPts += proj;
+
+            playerDetails.push({
+                ...p,
+                propData,
+                projectedPts: proj
+            });
+        });
+
+        // Assign grade based on projected points and roster quality
+        let grade, gradeColor, commentary;
+        const aliveCount = alivePlayers.length;
+
+        if (aliveCount === 0) {
+            grade = 'F';
+            gradeColor = '#dc2626';
+            commentary = getEliminatedCommentary(t.name, eliminatedPlayers.length);
+        } else if (projectedPts >= 40) {
+            grade = 'A+';
+            gradeColor = '#16a34a';
+            commentary = getTopTierCommentary(t.name, aliveCount, projectedPts);
+        } else if (projectedPts >= 30) {
+            grade = 'A';
+            gradeColor = '#22c55e';
+            commentary = getGoodCommentary(t.name, aliveCount, projectedPts);
+        } else if (projectedPts >= 20) {
+            grade = 'B+';
+            gradeColor = '#84cc16';
+            commentary = getDecentCommentary(t.name, aliveCount, projectedPts);
+        } else if (projectedPts >= 15) {
+            grade = 'B';
+            gradeColor = '#eab308';
+            commentary = getMediocreCommentary(t.name, aliveCount, projectedPts);
+        } else if (projectedPts >= 10) {
+            grade = 'C';
+            gradeColor = '#f97316';
+            commentary = getWeakCommentary(t.name, aliveCount, projectedPts);
+        } else if (projectedPts > 0) {
+            grade = 'D';
+            gradeColor = '#ef4444';
+            commentary = getTerribleCommentary(t.name, aliveCount, projectedPts);
+        } else {
+            grade = 'F';
+            gradeColor = '#dc2626';
+            commentary = getNoHopeCommentary(t.name);
+        }
+
+        teamProjections.push({
+            name: t.name,
+            grade,
+            gradeColor,
+            commentary,
+            projectedPts,
+            aliveCount,
+            eliminatedCount: eliminatedPlayers.length,
+            alivePlayers: playerDetails,
+            eliminatedPlayers: eliminatedPlayers.map(rp => PLAYERS.find(pp => pp.id === rp.id)).filter(Boolean)
+        });
+    });
+
+    // Sort by projected points
+    teamProjections.sort((a, b) => b.projectedPts - a.projectedPts);
+
+    // Build the HTML
+    let html = `
+        <div class="card glass" style="margin-bottom: 24px; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); color: white; border: none;">
+            <div style="text-align: center; padding: 24px;">
+                <h1 style="font-size: 2.5rem; font-weight: 900; margin: 0; letter-spacing: -2px;">
+                    🏈 SUPER BOWL LX
+                </h1>
+                <p style="font-size: 1.2rem; opacity: 0.9; margin: 8px 0;">
+                    <span style="color: #4ade80; font-weight: 800;">SEATTLE SEAHAWKS</span>
+                    <span style="opacity: 0.5;"> vs </span>
+                    <span style="color: #60a5fa; font-weight: 800;">NEW ENGLAND PATRIOTS</span>
+                </p>
+                <div style="display: flex; justify-content: center; gap: 24px; margin-top: 16px; flex-wrap: wrap;">
+                    <div style="background: rgba(255,255,255,0.1); padding: 12px 20px; border-radius: 12px;">
+                        <div style="font-size: 0.7rem; opacity: 0.6;">DATE</div>
+                        <div style="font-weight: 800;">${SUPERBOWL_PROPS.gameInfo.date}</div>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.1); padding: 12px 20px; border-radius: 12px;">
+                        <div style="font-size: 0.7rem; opacity: 0.6;">TIME</div>
+                        <div style="font-weight: 800;">${SUPERBOWL_PROPS.gameInfo.time}</div>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.1); padding: 12px 20px; border-radius: 12px;">
+                        <div style="font-size: 0.7rem; opacity: 0.6;">SPREAD</div>
+                        <div style="font-weight: 800;">${SUPERBOWL_PROPS.gameInfo.spread}</div>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.1); padding: 12px 20px; border-radius: 12px;">
+                        <div style="font-size: 0.7rem; opacity: 0.6;">OVER/UNDER</div>
+                        <div style="font-weight: 800;">${SUPERBOWL_PROPS.gameInfo.overUnder}</div>
+                    </div>
+                </div>
+                <p style="font-size: 0.8rem; opacity: 0.5; margin-top: 16px;">
+                    📍 ${SUPERBOWL_PROPS.gameInfo.location}
+                </p>
+            </div>
+        </div>
+
+        <h2 style="font-weight: 900; font-size: 1.5rem; margin-bottom: 24px; letter-spacing: -1px;">
+            🎯 FANTASY TEAM PROJECTIONS
+        </h2>
+    `;
+
+    teamProjections.forEach((team, idx) => {
+        const rank = idx + 1;
+        const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`;
+
+        html += `
+            <div class="card glass" style="margin-bottom: 20px; border-left: 5px solid ${team.gradeColor};">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
+                    <div style="flex: 1; min-width: 200px;">
+                        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+                            <span style="font-size: 1.5rem;">${medal}</span>
+                            <h3 style="font-weight: 900; font-size: 1.3rem; margin: 0; letter-spacing: -1px;">
+                                ${team.name.toUpperCase()}
+                            </h3>
+                        </div>
+                        <p style="font-size: 0.85rem; color: var(--gray); margin: 0; line-height: 1.5;">
+                            ${team.commentary}
+                        </p>
+                    </div>
+                    <div style="text-align: center; min-width: 120px;">
+                        <div style="font-size: 3rem; font-weight: 900; color: ${team.gradeColor}; line-height: 1;">
+                            ${team.grade}
+                        </div>
+                        <div style="font-size: 0.7rem; color: var(--gray); font-weight: 600;">
+                            SUPER BOWL GRADE
+                        </div>
+                    </div>
+                    <div style="text-align: center; min-width: 100px;">
+                        <div style="font-size: 2rem; font-weight: 900; color: var(--red); line-height: 1;">
+                            ${team.projectedPts.toFixed(1)}
+                        </div>
+                        <div style="font-size: 0.7rem; color: var(--gray); font-weight: 600;">
+                            PROJ. PTS
+                        </div>
+                    </div>
+                </div>
+
+                ${team.aliveCount > 0 ? `
+                    <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border);">
+                        <h4 style="font-size: 0.8rem; font-weight: 800; color: #16a34a; margin-bottom: 12px;">
+                            🟢 ACTIVE PLAYERS (${team.aliveCount})
+                        </h4>
+                        <div style="overflow-x: auto;">
+                            <table style="width: 100%; font-size: 0.8rem; border-collapse: collapse;">
+                                <thead>
+                                    <tr style="background: rgba(0,0,0,0.03);">
+                                        <th style="padding: 10px; text-align: left; font-weight: 800;">PLAYER</th>
+                                        <th style="padding: 10px; text-align: center; font-weight: 800;">TEAM</th>
+                                        <th style="padding: 10px; text-align: center; font-weight: 800;">POS</th>
+                                        <th style="padding: 10px; text-align: center; font-weight: 800;">TD ODDS</th>
+                                        <th style="padding: 10px; text-align: center; font-weight: 800;">PROJ TD</th>
+                                        <th style="padding: 10px; text-align: center; font-weight: 800; color: var(--red);">PROJ PTS</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${team.alivePlayers.map(p => {
+            const odds = p.propData ? p.propData.odds : null;
+            const oddsStr = odds !== null ? (odds > 0 ? `+${odds}` : odds) : 'N/A';
+            const oddsColor = odds !== null ? (odds < 0 ? '#16a34a' : odds < 200 ? '#eab308' : '#6b7280') : '#9ca3af';
+            const projTD = p.propData ? p.propData.projTD.toFixed(2) : '0.00';
+            const teamColor = p.team === 'SEA' ? '#4ade80' : '#60a5fa';
+
+            return `
+                                            <tr style="border-bottom: 1px solid var(--border);">
+                                                <td style="padding: 12px 10px; font-weight: 700;">${p.name}</td>
+                                                <td style="padding: 12px 10px; text-align: center;">
+                                                    <span style="background: ${teamColor}; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 800;">
+                                                        ${p.team}
+                                                    </span>
+                                                </td>
+                                                <td style="padding: 12px 10px; text-align: center; font-weight: 600; color: var(--gray);">${p.pos}</td>
+                                                <td style="padding: 12px 10px; text-align: center; font-weight: 800; color: ${oddsColor};">${oddsStr}</td>
+                                                <td style="padding: 12px 10px; text-align: center; font-weight: 600;">${projTD}</td>
+                                                <td style="padding: 12px 10px; text-align: center; font-weight: 800; color: var(--red); font-size: 1rem;">${p.projectedPts.toFixed(1)}</td>
+                                            </tr>
+                                        `;
+        }).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                ` : ''}
+
+                ${team.eliminatedCount > 0 ? `
+                    <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border);">
+                        <h4 style="font-size: 0.8rem; font-weight: 800; color: #dc2626; margin-bottom: 12px;">
+                            💀 ELIMINATED (${team.eliminatedCount})
+                        </h4>
+                        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                            ${team.eliminatedPlayers.map(p => `
+                                <span style="background: rgba(220, 38, 38, 0.1); color: #dc2626; padding: 6px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: 600;">
+                                    ❌ ${p.name} (${p.team})
+                                </span>
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    });
+
+    // Add betting disclaimer
+    html += `
+        <div class="card" style="margin-top: 24px; background: #fef3c7; border: 1px solid #f59e0b; text-align: center;">
+            <p style="margin: 0; font-size: 0.8rem; color: #92400e; font-weight: 600;">
+                ⚠️ Projections are for entertainment purposes only. Player props sourced from DraftKings, FanDuel, and major sportsbooks.
+            </p>
+        </div>
+    `;
+
+    container.innerHTML = html;
+}
+
+// Sarcastic commentary generators
+function getEliminatedCommentary(name, count) {
+    const options = [
+        `${name}, my friend, your entire roster went home weeks ago. You're basically watching the Super Bowl for the commercials at this point. Maybe next year you'll learn that picking players who actually make the playoffs is, you know, kind of important.`,
+        `Oh ${name}, where did it all go wrong? All ${count} of your players are sipping Mai Tais in Cancun right now. Your fantasy season ended before it even began. Spectacular failure.`,
+        `${name} showed up to a playoff fantasy league and forgot the "playoff" part. Zero points incoming. Absolutely legendary tank job.`,
+        `I've seen better roster management from a blindfolded monkey throwing darts. ${name}, your ${count} eliminated players salute you from their couches.`
+    ];
+    return options[Math.floor(Math.random() * options.length)];
+}
+
+function getTopTierCommentary(name, count, pts) {
+    const options = [
+        `Holy smokes, ${name}! With ${count} players still kicking and a projected ${pts.toFixed(1)} points, you're basically printing championship trophies. Either you're a genius or incredibly lucky. Probably lucky.`,
+        `${name} came to WIN. This roster is absolutely stacked for the big game. ${count} active weapons ready to feast. The rest of us are fighting for second place.`,
+        `Someone call the fire department because ${name}'s roster is absolutely BLAZING. ${pts.toFixed(1)} projected points? That's not even fair.`
+    ];
+    return options[Math.floor(Math.random() * options.length)];
+}
+
+function getGoodCommentary(name, count, pts) {
+    const options = [
+        `${name} is sitting pretty with ${count} players in the big game. ${pts.toFixed(1)} projected points puts you in solid contention. Don't get cocky though - we've all seen leads evaporate faster than Tom Brady's retirement plans.`,
+        `Solid work, ${name}. Your ${count} active players should give you a fighting chance. Not elite, but definitely capable of making some noise.`,
+        `${name} drafted like someone who actually watched football this year. Impressive. ${count} players still alive with ${pts.toFixed(1)} projected - not too shabby!`
+    ];
+    return options[Math.floor(Math.random() * options.length)];
+}
+
+function getDecentCommentary(name, count, pts) {
+    const options = [
+        `${name}, you're in the "hopes and prayers" tier. ${count} players, ${pts.toFixed(1)} projected points. You need some serious touchdown luck, but crazier things have happened.`,
+        `The ${name} experience: not great, not terrible. Like a lukewarm cup of coffee. ${count} players could boom or bust.`,
+        `${name} is the definition of "could go either way." ${pts.toFixed(1)} points projected - better hope those TD odds hit!`
+    ];
+    return options[Math.floor(Math.random() * options.length)];
+}
+
+function getMediocreCommentary(name, count, pts) {
+    const options = [
+        `${name}, let's be honest - you're banking on a miracle. ${count} players, ${pts.toFixed(1)} projected points. You need touchdowns like plants need water, and your desert is looking pretty dry.`,
+        `The ${name} roster is like a C- student hoping the test is graded on a curve. ${count} players might save you, but probably won't.`,
+        `${name}'s Super Bowl ceiling: "That was fun, I guess." ${pts.toFixed(1)} points isn't going to win anything, but at least you're still in it?`
+    ];
+    return options[Math.floor(Math.random() * options.length)];
+}
+
+function getWeakCommentary(name, count, pts) {
+    const options = [
+        `Yikes, ${name}. ${count} players with a ${pts.toFixed(1)} point projection is... well, it's something. You'll need every single one of those TD odds to hit. Good luck with that.`,
+        `${name} is basically relying on divine intervention at this point. ${pts.toFixed(1)} projected points? I've seen backup kickers outscore that.`,
+        `The ${name} strategy of "hope for the best" is bold. Stupid, but bold. ${count} players, minimal upside. Oof.`
+    ];
+    return options[Math.floor(Math.random() * options.length)];
+}
+
+function getTerribleCommentary(name, count, pts) {
+    const options = [
+        `${name}, I don't know how to tell you this, but your ${count} remaining players are projected for a whopping ${pts.toFixed(1)} points. My grandmother could score more, and she doesn't watch football.`,
+        `${name}'s Super Bowl outlook: pain. Pure, unfiltered pain. ${pts.toFixed(1)} projected points is just sad. Really sad.`,
+        `The ${name} roster has about as much upside as a screen door on a submarine. ${count} players, ${pts.toFixed(1)} points. Why even watch?`
+    ];
+    return options[Math.floor(Math.random() * options.length)];
+}
+
+function getNoHopeCommentary(name) {
+    const options = [
+        `${name}, there's no sugar-coating this: you have ZERO players in the Super Bowl. Your fantasy season is as dead as disco. Better luck in 2027!`,
+        `${name} set a new record for fastest fantasy elimination. Zero active players. Zero hope. Zero points. The triple zero achievement unlocked!`,
+        `Congratulations ${name}, you've achieved Fantasy Football Nirvana: complete and total roster annihilation. Not a single player left. Truly impressive failure.`
+    ];
+    return options[Math.floor(Math.random() * options.length)];
+}
 
 function renderSettings(l) {
     const list = document.getElementById('scoring-settings-list');
